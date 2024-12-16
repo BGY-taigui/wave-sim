@@ -15,6 +15,8 @@ class ShapeFunction{
         mat jacobian;
         mat jacobian_inv;
 
+        double jacobian_det;
+
         //直行座標系での微分値
         vec xi = {
             -1/8,1/8,1/8,-1/8,-1/8,1/8,1/8,-1/8
@@ -31,8 +33,8 @@ class ShapeFunction{
 
         jacobian = mat(3,3,arma::fill::zeros);
         make_jacobian(points);
-
         calcurate_jacobian_inv();
+        
         calcurate_Nxyz();
 
     }
@@ -66,6 +68,10 @@ class ShapeFunction{
         y = Nxyz.row(1);
         z = Nxyz.row(2);
 
+    }
+
+    void calcurate_jacobian_det(){
+        jacobian_det = arma::det(jacobian);
     }
 };
 

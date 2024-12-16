@@ -7,84 +7,133 @@ using namespace arma;
 
 class ShapeFunction{
     public:
-        //自然座標系での微分値
-        vec x;
-        vec y;
-        vec z;
+        mat points;
 
-        mat jacobian;
-        mat jacobian_inv;
+        ShapeFunction(mat points_init){
+            points = points_init;
+        }
 
-        double jacobian_det;
+        vec N_func(double xi,double eta,double zeta){
+            vec result = {
+                1/8*(1-xi)*(1-eta)*(1-zeta),
+                1/8*(1+xi)*(1-eta)*(1-zeta),
+                1/8*(1+xi)*(1+eta)*(1-zeta),
+                1/8*(1-xi)*(1+eta)*(1-zeta),
+                1/8*(1-xi)*(1-eta)*(1+zeta),
+                1/8*(1+xi)*(1-eta)*(1+zeta),
+                1/8*(1+xi)*(1+eta)*(1+zeta),
+                1/8*(1-xi)*(1+eta)*(1+zeta),
+            };
+            return result;
+        }
 
-        //直行座標系での微分値
-        vec xi = {
-            -1/8,1/8,1/8,-1/8,-1/8,1/8,1/8,-1/8
-        };
-        vec eta = {
-            -1/8,-1/8,1/8,1/8,-1/8,-1/8,1/8,1/8
-        };
-        vec zeta = {
-            -1/8,-1/8,-1/8,-1/8,1/8,1/8,1/8,1/8,
-        };
+        vec diff_xi(double xi,double eta,double zeta){
+            vec result = {
+                1/8*-1*(1-eta)*(1-zeta),
+                1/8*(1-eta)*(1-zeta),
+                1/8*(1+eta)*(1-zeta),
+                1/8*-1*(1+eta)*(1-zeta),
+                1/8*-1*(1-eta)*(1+zeta),
+                1/8*(1-eta)*(1+zeta),
+                1/8*(1+eta)*(1+zeta),
+                1/8*-1*(1+eta)*(1+zeta),
+            };
+            return result;
+        }
 
+        vec diff_eta(double xi,double eta,double zeta){
+            vec result = {
+                1/8*(1-xi)*-1*(1-zeta),
+                1/8*(1+xi)*-1*(1-zeta),
+                1/8*(1+xi)*(1-zeta),
+                1/8*(1-xi)*(1-zeta),
+                1/8*(1-xi)*-1*(1+zeta),
+                1/8*(1+xi)*-1*(1+zeta),
+                1/8*(1+xi)*(1+zeta),
+                1/8*(1-xi)*(1+zeta),
+            };
+            return result;
+        }
 
-    ShapeFunction(mat points){
+        vec diff_zeta(double xi,double eta,double zeta){
+            vec result = {
+                1/8*(1-xi)*(1-eta)*-1,
+                1/8*(1+xi)*(1-eta)*-1,
+                1/8*(1+xi)*(1+eta)*-1,
+                1/8*(1-xi)*(1+eta)*-1,
+                1/8*(1-xi)*(1-eta),
+                1/8*(1+xi)*(1-eta),
+                1/8*(1+xi)*(1+eta),
+                1/8*(1-xi)*(1+eta),
+            };
+            return result;
+        }
 
-        jacobian = mat(3,3,arma::fill::zeros);
-        make_jacobian(points);
-        calcurate_jacobian_inv();
-        
-        calcurate_Nxyz();
+        mat diff_xietazeta(double xi,double eta,double zeta){
+            mat result(8,3);
+            result.row(0) = diff_xi(xi,eta,zeta);
+            result.row(1) = diff_eta(xi,eta,zeta);
+            result.row(2) = diff_zeta(xi,eta,zeta);
 
-    }
+            return result;
+        }
 
-    void make_jacobian(mat points){
+        mat jacobian(double xi,double eta, double zeta){
 
-        jacobian.row(0) = arma::dot(xi,points);
-        jacobian.row(1) = arma::dot(eta,points);
-        jacobian.row(2) = arma::dot(zeta,points);
+            mat jacobian(3,3);
 
-    }
+            jacobian.row(0) = {
+                arma::dot(diff_xi(xi,eta,zeta),points.col(0)),
+                arma::dot(diff_xi(xi,eta,zeta),points.col(0)),
+                arma::dot(diff_xi(xi,eta,zeta),points.col(0))
+            };
 
-    void calcurate_jacobian_inv(){
+            jacobian.row(1) = {
+                arma::dot(diff_eta(xi,eta,zeta),points.col(1)),
+                arma::dot(diff_eta(xi,eta,zeta),points.col(1)),
+                arma::dot(diff_eta(xi,eta,zeta),points.col(1))
+            };
 
-        jacobian_inv = arma::inv(jacobian);
+            jacobian.row(2) = {
+                arma::dot(diff_zeta(xi,eta,zeta),points.col(2)),
+                arma::dot(diff_zeta(xi,eta,zeta),points.col(2)),
+                arma::dot(diff_zeta(xi,eta,zeta),points.col(2))
+            };
+            //return jacobian;
 
-    }
+        }
 
-    void calcurate_Nxyz(){
+        mat jacobian_inv(double xi,double eta,double zeta){
+            return arma::inv(jacobian(xi,eta,zeta));
+        }
 
-        mat N_xietazeta(3,3);
-        mat Nxyz(3,3);
+        mat xyz(double xi,double eta,double zeta){
+            return jacobian_inv(xi,eta,zeta)*diff_xietazeta(xi,eta,zeta);
+        }
 
-        N_xietazeta.row(0)=xi;
-        N_xietazeta.row(1)=eta;
-        N_xietazeta.row(2)=zeta;
-
-        Nxyz = arma::dot(jacobian_inv,N_xietazeta);
-
-        x = Nxyz.row(0);
-        y = Nxyz.row(1);
-        z = Nxyz.row(2);
-
-    }
-
-    void calcurate_jacobian_det(){
-        jacobian_det = arma::det(jacobian);
-    }
+        double calcurate_jacobian_det(double xi,double eta,double zeta){
+            return arma::det(jacobian(xi,eta,zeta));
+        }
 };
 
 class Cell{
     public:
+    
+        double sound_speed;
 
         mat points;
         mat element_matrix;
+
+        ShapeFunction N;
 
         double gauss_integral(){
 
     
             return 0.0;
+        }
+
+        double weak_form_int_part(double xi,double eta,double zeta){
+
         }
 
         double calcurate_weak_form_integration_term(){
@@ -99,7 +148,7 @@ class Cell{
         Cell(mat init_points){
             points = init_points;
 
-            ShapeFunction N(points);
+            N = ShapeFunction(points);
 
             calcurate_weak_form_integration_term();
 

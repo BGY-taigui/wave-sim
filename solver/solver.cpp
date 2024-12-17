@@ -6,9 +6,10 @@
 using namespace arma;
 
 class ShapeFunction{
-    public:
+    private:
         mat points;
 
+    public:
         ShapeFunction(mat points_init){
             points = points_init;
         }
@@ -121,17 +122,18 @@ class ShapeFunction{
 };
 
 class Cell{
-    public:
     
-        double sound_speed;
+    private: 
+        double sound_speed = 1;
 
         mat points;
-        mat element_matrix;
-
         ShapeFunction N;
+        mat k_matrix;
+    
+    public:
 
         //k[ij]の計算をする
-        double gauss_integral_m_two(double xi,double eta,double zeta,int i,int j){
+        double gauss_integral_m_two(int i,int j){
             double weight = 1;
             // xi plus minus
             double xi_pm = 0.577305;
@@ -149,31 +151,61 @@ class Cell{
         double integrand(double xi,double eta,double zeta,int i,int j){
                 //逆行列計算の回数を減らすために、一度Nxyzの計算結果を保存する
                 mat Nxyz=N.xyz(xi,eta,zeta);
-                vec Nx = Nxyz.row(0);
-                vec Ny = Nxyz.row(1);
-                vec Nz = Nxyz.row(2);
-                double jacobian = N.jacobian_det(xi,eta,zeta);
+                vec Nx = Nxyz.row(0).t();
+                vec Ny = Nxyz.row(1).t();
+                vec Nz = Nxyz.row(2).t();
+                double jacobian_det = N.jacobian_det(xi,eta,zeta);
 
             return sound_speed*sound_speed*(
                 Nx(i)*Nx(j)+Ny(i)*Ny(j)+Nz(i)*Nz(j)
-            )*jacobian;
+            )*jacobian_det;
         }
 
         void make_element_matrix(){
 
+            for(int i=0;i<8;i++){
+                for(int j=0;j<8;j++){
+                    k_matrix(i,j) = gauss_integral_m_two(i,j);
+                }
+            }
         }
 
-        Cell(mat init_points) : N(init_points) {
+        Cell(mat init_points) : 
+            N(init_points),
+            k_matrix(8,8,arma::fill::zeros) 
+        {
             points = init_points;
 
-
             make_element_matrix();
+
+            std::cout<<k_matrix;
 
         }
 };
 
 
 class WaveMatrix{
+
+    double sound_speed;
+
+    vec point_vector;
+    mat k_matrix;
+
+    void cell_connectivity(){
+
+    }
+
+    void voundary_condittion(){
+
+    }
+
+    void solve_inv(){
+
+    }
+
+};
+
+class Solver{
 
 };
 
@@ -190,7 +222,7 @@ int main(){
         {0,1,1},
     };
 
-    ShapeFunction N(points);
+    Cell cell(points);
 
     std::cout << "シミュレーションが終了しました。\n";
 

@@ -121,7 +121,7 @@ class ShapeFunction{
         }
 };
 
-class Cell{
+class ElementMatrix{
     
     private: 
         double sound_speed = 1;
@@ -129,26 +129,54 @@ class Cell{
         mat points;
         ShapeFunction N;
         mat k_matrix;
+        mat n_matrix;
     
     public:
 
         //k[ij]の計算をする
-        double gauss_integral_m_two(int i,int j){
+        double gauss_integral_m_two_spatial_derivative_term(int i,int j){
+
             double weight = 1;
             // xi plus minus
             double xi_pm = 0.577305;
             double eta_pm = 0.577305;
             double zeta_pm = 0.577305;
 
+            //TODO もしかしてWeight3乗しなきゃ行けない？
             return 
-                weight*integrand(xi_pm,eta_pm,zeta_pm,i,j)+weight*integrand(xi_pm,eta_pm,-zeta_pm,i,j)+ 
-                weight*integrand(xi_pm,-eta_pm,zeta_pm,i,j)+weight*integrand(xi_pm,-eta_pm,-zeta_pm,i,j)+ 
-                weight*integrand(-xi_pm,eta_pm,zeta_pm,i,j)+weight*integrand(-xi_pm,eta_pm,-zeta_pm,i,j)+ 
-                weight*integrand(-xi_pm,-eta_pm,zeta_pm,i,j)+weight*integrand(-xi_pm,-eta_pm,-zeta_pm,i,j)
+                weight*integrand_spatial_derivative_term(xi_pm,eta_pm,zeta_pm,i,j)+
+                weight*integrand_spatial_derivative_term(xi_pm,eta_pm,-zeta_pm,i,j)+ 
+                weight*integrand_spatial_derivative_term(xi_pm,-eta_pm,zeta_pm,i,j)+
+                weight*integrand_spatial_derivative_term(xi_pm,-eta_pm,-zeta_pm,i,j)+ 
+                weight*integrand_spatial_derivative_term(-xi_pm,eta_pm,zeta_pm,i,j)+
+                weight*integrand_spatial_derivative_term(-xi_pm,eta_pm,-zeta_pm,i,j)+ 
+                weight*integrand_spatial_derivative_term(-xi_pm,-eta_pm,zeta_pm,i,j)+
+                weight*integrand_spatial_derivative_term(-xi_pm,-eta_pm,-zeta_pm,i,j)
             ;
         }
 
-        double integrand(double xi,double eta,double zeta,int i,int j){
+        double gauss_integral_m_two_temporal_derivative_term(int i,int j){
+            
+            double weight = 1;
+            // xi plus minus
+            double xi_pm = 0.577305;
+            double eta_pm = 0.577305;
+            double zeta_pm = 0.577305;
+
+            //TODO もしかしてWeight3乗しなきゃ行けない？
+            return 
+                weight*integrand_temporal_derivative_term(xi_pm,eta_pm,zeta_pm,i,j)+
+                weight*integrand_temporal_derivative_term(xi_pm,eta_pm,-zeta_pm,i,j)+ 
+                weight*integrand_temporal_derivative_term(xi_pm,-eta_pm,zeta_pm,i,j)+
+                weight*integrand_temporal_derivative_term(xi_pm,-eta_pm,-zeta_pm,i,j)+ 
+                weight*integrand_temporal_derivative_term(-xi_pm,eta_pm,zeta_pm,i,j)+
+                weight*integrand_temporal_derivative_term(-xi_pm,eta_pm,-zeta_pm,i,j)+ 
+                weight*integrand_temporal_derivative_term(-xi_pm,-eta_pm,zeta_pm,i,j)+
+                weight*integrand_temporal_derivative_term(-xi_pm,-eta_pm,-zeta_pm,i,j)
+            ;
+        }
+
+        double integrand_spatial_derivative_term(double xi,double eta,double zeta,int i,int j){
                 //逆行列計算の回数を減らすために、一度Nxyzの計算結果を保存する
                 mat Nxyz=N.xyz(xi,eta,zeta);
                 vec Nx = Nxyz.row(0).t();
@@ -161,16 +189,35 @@ class Cell{
             )*jacobian_det;
         }
 
+        double integrand_temporal_derivative_term(double xi,double eta,double zeta,int i,int j){
+                //逆行列計算の回数を減らすために、一度Nxyzの計算結果を保存する
+                vec N_func=N.N_func(xi,eta,zeta);
+                double jacobian_det = N.jacobian_det(xi,eta,zeta);
+
+            return N_func(i)*N_func(j)*jacobian_det;
+        }
+
         void make_element_matrix(){
+
+            mat k(8,8);
+            mat n(8,8);
 
             for(int i=0;i<8;i++){
                 for(int j=0;j<8;j++){
-                    k_matrix(i,j) = gauss_integral_m_two(i,j);
+                    k(i,j) = gauss_integral_m_two_spatial_derivative_term(i,j);
                 }
             }
+            for(int i=0;i<8;i++){
+                for(int j=0;j<8;j++){
+                    n(i,j) = gauss_integral_m_two_temporal_derivative_term(i,j);
+                }
+            }
+
+            k_matrix = arma::inv(n)*k;
+
         }
 
-        Cell(mat init_points) : 
+        ElementMatrix(mat init_points) : 
             N(init_points),
             k_matrix(8,8,arma::fill::zeros) 
         {
@@ -209,6 +256,20 @@ class Solver{
 
 };
 
+class Point{
+    vec vector;
+    int id;
+};
+
+class Cell{
+    std::vector<int> point_id;
+    int id;
+};
+
+class MeshUtils{
+
+};
+
 int main(){
 
     mat points = {
@@ -222,7 +283,7 @@ int main(){
         {0,1,1},
     };
 
-    Cell cell(points);
+    ElementMatrix cell(points);
 
     std::cout << "シミュレーションが終了しました。\n";
 

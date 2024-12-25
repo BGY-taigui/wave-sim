@@ -239,6 +239,19 @@ class Cell{
         int id;
 };
 
+class GatherMatrix{
+    public:
+        sp_mat L;
+
+        GatherMatrix(std::vector<int> point_ids,std::vector<int>& all_points):
+            L(all_points.size(),8) 
+        {
+            for(int i=0;i<point_ids.size();i++){
+                for(int j=0;j<all_points.size();j++){
+                    if(point_ids[i]==all_points[j]){
+                        L(i,j) = 1;
+        }}}} 
+};
 
 class GlobalMatrix{
 
@@ -255,31 +268,6 @@ class GlobalMatrix{
     void voundary_condittion(){
 
     }
-
-    std::vector<std::vector<int>> find_same_point_id_index(std::vector<int>& point_index){
-        std::vector<std::vector<int>> result;
-
-        for(int i=0;i<point_index.size();i++){
-            for(int j=i+1;j<point_index.size();j++){
-                if(point_index[i]==point_index[j]){
-                    result.push_back({i,j});
-                }
-            }
-        }
-
-        // 三つ以上のインデックスが同時に重複していた場合はエラーを返す
-        for(int i=0;i<result.size();i++){
-            for(int j=i+1;j<result.size();j++){
-                if(result[i][0]==result[j][0]){
-                    throw std::runtime_error("Error: Point_index have More than two same value.");
-                }
-            }
-        }  
-
-        return result;
-
-    }
-
 
     GlobalMatrix(std::vector<Cell>& Cells,std::vector<Point>& mesh_points) :
         k_matrix(0,0), 
@@ -302,18 +290,6 @@ class GlobalMatrix{
             ElementMatrix element_matrix(points);
             
             //要素行列を全体行列にマッピングする
-            k_matrix.submat(k_matrix.n_rows-8,k_matrix.n_cols-8,k_matrix.n_rows-1,k_matrix.n_cols-1)=element_matrix.k_matrix;
-
-            //重複する節点があったら接続を考慮して重ね合わせる
-
-            std::vector<std::vector<int>> duplicated_rows = find_same_point_id_index(corresponding_point_ids);
-            
-            for(auto& duplicated_row : duplicated_rows){
-                matrix_overlay(k_matrix,duplicated_row[0],duplicated_row[1]);
-                //対応する節点ID配列も削除する
-                corresponding_point_ids.erase(corresponding_point_ids.begin()+duplicated_row[1]);
-            }
-
         }
 
     }
@@ -321,9 +297,11 @@ class GlobalMatrix{
 };
 
 class Solver{
+    void mode_analysis(){}
+    void unsteadry_analysis(){}
+    Solver(){}
 
 };
-
 
 class MeshUtils{
 

@@ -125,13 +125,12 @@ class ElementMatrix{
     
     private: 
         double sound_speed = 1;
-
         mat points;
         ShapeFunction N;
-        mat k_matrix;
-        mat n_matrix;
     
     public:
+        mat wave_matrix;
+        mat nodal_matrix;
 
         //k[ij]の計算をする
         double gauss_integral_m_two_spatial_derivative_term(int i,int j){
@@ -142,6 +141,7 @@ class ElementMatrix{
             double eta_pm = 0.577305;
             double zeta_pm = 0.577305;
 
+            //TODO本当に2次のガウス積分であってるか
             //TODO もしかしてWeight3乗しなきゃ行けない？
             return 
                 weight*integrand_spatial_derivative_term(xi_pm,eta_pm,zeta_pm,i,j)+
@@ -199,46 +199,56 @@ class ElementMatrix{
 
         void make_element_matrix(){
 
-            mat k(8,8);
-            mat n(8,8);
-
             for(int i=0;i<8;i++){
                 for(int j=0;j<8;j++){
-                    k(i,j) = gauss_integral_m_two_spatial_derivative_term(i,j);
+                    wave_matrix(i,j) = gauss_integral_m_two_spatial_derivative_term(i,j);
                 }
             }
             for(int i=0;i<8;i++){
                 for(int j=0;j<8;j++){
-                    n(i,j) = gauss_integral_m_two_temporal_derivative_term(i,j);
+                    nodal_matrix(i,j) = gauss_integral_m_two_temporal_derivative_term(i,j);
                 }
             }
 
-            k_matrix = arma::inv(n)*k;
-
+            std::cout<<"print matrix"<<std::endl;
+            std::cout<<wave_matrix<<std::endl;
+            std::cout<<nodal_matrix<<std::endl;
         }
 
         ElementMatrix(mat init_points) : 
             N(init_points),
-            k_matrix(8,8,arma::fill::zeros) 
+            wave_matrix(8,8,arma::fill::zeros),
+            nodal_matrix(8,8,arma::fill::zeros) 
         {
             points = init_points;
-
             make_element_matrix();
-
-            std::cout<<k_matrix;
 
         }
 };
 
 
-class WaveMatrix{
+class Point{
+    public:
+        vec vector;
+        int id;
+};
+
+class Cell{
+    public:
+        std::vector<int> point_ids;
+        int id;
+};
+
+
+class GlobalMatrix{
 
     double sound_speed;
 
     vec point_vector;
-    mat k_matrix;
+    std::vector<int> corresponding_point_ids;
+    sp_mat k_matrix;
 
-    void cell_connectivity(){
+    void matrix_overlay(sp_mat& matrix,int row_a,int row_b){
 
     }
 
@@ -246,7 +256,65 @@ class WaveMatrix{
 
     }
 
-    void solve_inv(){
+    std::vector<std::vector<int>> find_same_point_id_index(std::vector<int>& point_index){
+        std::vector<std::vector<int>> result;
+
+        for(int i=0;i<point_index.size();i++){
+            for(int j=i+1;j<point_index.size();j++){
+                if(point_index[i]==point_index[j]){
+                    result.push_back({i,j});
+                }
+            }
+        }
+
+        // 三つ以上のインデックスが同時に重複していた場合はエラーを返す
+        for(int i=0;i<result.size();i++){
+            for(int j=i+1;j<result.size();j++){
+                if(result[i][0]==result[j][0]){
+                    throw std::runtime_error("Error: Point_index have More than two same value.");
+                }
+            }
+        }  
+
+        return result;
+
+    }
+
+
+    GlobalMatrix(std::vector<Cell>& Cells,std::vector<Point>& mesh_points) :
+        k_matrix(0,0), 
+        corresponding_point_ids(0)
+    {
+
+        for(auto& cell : Cells){
+            //全体行列を一旦8行、列分0で拡大する
+            k_matrix.resize(k_matrix.n_rows+8,k_matrix.n_cols+8);
+
+            mat points(8,3);
+            //TODO ここら辺に、要素の数がズレていた時のエラー処理を実装する
+            for(int i=0;i<cell.point_ids.size(); i++){
+                //各要素のポイントの座標をまとめる
+                points.row(i) = mesh_points[cell.point_ids[i]].vector;
+                //全体行列に追加するポイントのIDを記録しておく
+                corresponding_point_ids.push_back(cell.point_ids[i]);
+            }
+
+            ElementMatrix element_matrix(points);
+            
+            //要素行列を全体行列にマッピングする
+            k_matrix.submat(k_matrix.n_rows-8,k_matrix.n_cols-8,k_matrix.n_rows-1,k_matrix.n_cols-1)=element_matrix.k_matrix;
+
+            //重複する節点があったら接続を考慮して重ね合わせる
+
+            std::vector<std::vector<int>> duplicated_rows = find_same_point_id_index(corresponding_point_ids);
+            
+            for(auto& duplicated_row : duplicated_rows){
+                matrix_overlay(k_matrix,duplicated_row[0],duplicated_row[1]);
+                //対応する節点ID配列も削除する
+                corresponding_point_ids.erase(corresponding_point_ids.begin()+duplicated_row[1]);
+            }
+
+        }
 
     }
 
@@ -256,15 +324,6 @@ class Solver{
 
 };
 
-class Point{
-    vec vector;
-    int id;
-};
-
-class Cell{
-    std::vector<int> point_id;
-    int id;
-};
 
 class MeshUtils{
 

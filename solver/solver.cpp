@@ -3,6 +3,8 @@
 #include <vector>
 #include <armadillo>
 
+#include <vtkSmartPointer.h>
+
 using namespace arma;
 
 class ShapeFunction{
@@ -16,14 +18,14 @@ class ShapeFunction{
 
         vec N_func(double xi,double eta,double zeta){
             vec result = {
-                1.0/8*(1-xi)*(1-eta)*(1-zeta),
-                1.0/8*(1+xi)*(1-eta)*(1-zeta),
-                1.0/8*(1+xi)*(1+eta)*(1-zeta),
-                1.0/8*(1-xi)*(1+eta)*(1-zeta),
-                1.0/8*(1-xi)*(1-eta)*(1+zeta),
-                1.0/8*(1+xi)*(1-eta)*(1+zeta),
-                1.0/8*(1+xi)*(1+eta)*(1+zeta),
-                1.0/8*(1-xi)*(1+eta)*(1+zeta),
+                1.0/8*(1.0-xi)*(1.0-eta)*(1.0-zeta),
+                1.0/8*(1.0+xi)*(1.0-eta)*(1.0-zeta),
+                1.0/8*(1.0+xi)*(1.0+eta)*(1.0-zeta),
+                1.0/8*(1.0-xi)*(1.0+eta)*(1.0-zeta),
+                1.0/8*(1.0-xi)*(1.0-eta)*(1.0+zeta),
+                1.0/8*(1.0+xi)*(1.0-eta)*(1.0+zeta),
+                1.0/8*(1.0+xi)*(1.0+eta)*(1.0+zeta),
+                1.0/8*(1.0-xi)*(1.0+eta)*(1.0+zeta),
             };
             return result;
         }
@@ -31,42 +33,42 @@ class ShapeFunction{
         //形状関数をxiで微分した値(直交座標系の位置によって値が変わる)
         vec diff_xi(double xi,double eta,double zeta){
             vec result = {
-                1.0/8*-1*(1-eta)*(1-zeta),
-                1.0/8*(1-eta)*(1-zeta),
-                1.0/8*(1+eta)*(1-zeta),
-                1.0/8*-1*(1+eta)*(1-zeta),
-                1.0/8*-1*(1-eta)*(1+zeta),
-                1.0/8*(1-eta)*(1+zeta),
-                1.0/8*(1+eta)*(1+zeta),
-                1.0/8*-1*(1+eta)*(1+zeta),
+                1.0/8*-1.0*(1.0-eta)*(1.0-zeta),
+                1.0/8*(1.0-eta)*(1.0-zeta),
+                1.0/8*(1.0+eta)*(1.0-zeta),
+                1.0/8*-1.0*(1.0+eta)*(1.0-zeta),
+                1.0/8*-1.0*(1.0-eta)*(1.0+zeta),
+                1.0/8*(1.0-eta)*(1.0+zeta),
+                1.0/8*(1.0+eta)*(1.0+zeta),
+                1.0/8*-1.0*(1.0+eta)*(1.0+zeta),
             };
             return result;
         }
 
         vec diff_eta(double xi,double eta,double zeta){
             vec result = {
-                1.0/8*(1-xi)*-1*(1-zeta),
-                1.0/8*(1+xi)*-1*(1-zeta),
-                1.0/8*(1+xi)*(1-zeta),
-                1.0/8*(1-xi)*(1-zeta),
-                1.0/8*(1-xi)*-1*(1+zeta),
-                1.0/8*(1+xi)*-1*(1+zeta),
-                1.0/8*(1+xi)*(1+zeta),
-                1.0/8*(1-xi)*(1+zeta),
+                1.0/8*(1.0-xi)*-1.0*(1.0-zeta),
+                1.0/8*(1.0+xi)*-1.0*(1.0-zeta),
+                1.0/8*(1.0+xi)*(1.0-zeta),
+                1.0/8*(1.0-xi)*(1.0-zeta),
+                1.0/8*(1.0-xi)*-1.0*(1.0+zeta),
+                1.0/8*(1.0+xi)*-1.0*(1.0+zeta),
+                1.0/8*(1.0+xi)*(1.0+zeta),
+                1.0/8*(1.0-xi)*(1.0+zeta),
             };
             return result;
         }
 
         vec diff_zeta(double xi,double eta,double zeta){
             vec result = {
-                1.0/8*(1-xi)*(1-eta)*-1,
-                1.0/8*(1+xi)*(1-eta)*-1,
-                1.0/8*(1+xi)*(1+eta)*-1,
-                1.0/8*(1-xi)*(1+eta)*-1,
-                1.0/8*(1-xi)*(1-eta),
-                1.0/8*(1+xi)*(1-eta),
-                1.0/8*(1+xi)*(1+eta),
-                1.0/8*(1-xi)*(1+eta),
+                1.0/8*(1.0-xi)*(1.0-eta)*-1.0,
+                1.0/8*(1.0+xi)*(1.0-eta)*-1.0,
+                1.0/8*(1.0+xi)*(1.0+eta)*-1.0,
+                1.0/8*(1.0-xi)*(1.0+eta)*-1.0,
+                1.0/8*(1.0-xi)*(1.0-eta),
+                1.0/8*(1.0+xi)*(1.0-eta),
+                1.0/8*(1.0+xi)*(1.0+eta),
+                1.0/8*(1.0-xi)*(1.0+eta),
             };
             return result;
         }
@@ -124,6 +126,7 @@ class ShapeFunction{
 class ElementMatrix{
     
     private: 
+        //TODO 音速を自由に設定できるようにする
         double sound_speed = 1;
         mat points;
         ShapeFunction N;
@@ -142,16 +145,15 @@ class ElementMatrix{
             double zeta_pm = 0.577305;
 
             //TODO本当に2次のガウス積分であってるか
-            //TODO もしかしてWeight3乗しなきゃ行けない？
             return 
-                weight*integrand_spatial_derivative_term(xi_pm,eta_pm,zeta_pm,i,j)+
-                weight*integrand_spatial_derivative_term(xi_pm,eta_pm,-zeta_pm,i,j)+ 
-                weight*integrand_spatial_derivative_term(xi_pm,-eta_pm,zeta_pm,i,j)+
-                weight*integrand_spatial_derivative_term(xi_pm,-eta_pm,-zeta_pm,i,j)+ 
-                weight*integrand_spatial_derivative_term(-xi_pm,eta_pm,zeta_pm,i,j)+
-                weight*integrand_spatial_derivative_term(-xi_pm,eta_pm,-zeta_pm,i,j)+ 
-                weight*integrand_spatial_derivative_term(-xi_pm,-eta_pm,zeta_pm,i,j)+
-                weight*integrand_spatial_derivative_term(-xi_pm,-eta_pm,-zeta_pm,i,j)
+                std::pow(weight,3)*integrand_spatial_derivative_term(xi_pm,eta_pm,zeta_pm,i,j)+
+                std::pow(weight,3)*integrand_spatial_derivative_term(xi_pm,eta_pm,-zeta_pm,i,j)+ 
+                std::pow(weight,3)*integrand_spatial_derivative_term(xi_pm,-eta_pm,zeta_pm,i,j)+
+                std::pow(weight,3)*integrand_spatial_derivative_term(xi_pm,-eta_pm,-zeta_pm,i,j)+ 
+                std::pow(weight,3)*integrand_spatial_derivative_term(-xi_pm,eta_pm,zeta_pm,i,j)+
+                std::pow(weight,3)*integrand_spatial_derivative_term(-xi_pm,eta_pm,-zeta_pm,i,j)+ 
+                std::pow(weight,3)*integrand_spatial_derivative_term(-xi_pm,-eta_pm,zeta_pm,i,j)+
+                std::pow(weight,3)*integrand_spatial_derivative_term(-xi_pm,-eta_pm,-zeta_pm,i,j)
             ;
         }
 
@@ -163,16 +165,15 @@ class ElementMatrix{
             double eta_pm = 0.577305;
             double zeta_pm = 0.577305;
 
-            //TODO もしかしてWeight3乗しなきゃ行けない？
             return 
-                weight*integrand_temporal_derivative_term(xi_pm,eta_pm,zeta_pm,i,j)+
-                weight*integrand_temporal_derivative_term(xi_pm,eta_pm,-zeta_pm,i,j)+ 
-                weight*integrand_temporal_derivative_term(xi_pm,-eta_pm,zeta_pm,i,j)+
-                weight*integrand_temporal_derivative_term(xi_pm,-eta_pm,-zeta_pm,i,j)+ 
-                weight*integrand_temporal_derivative_term(-xi_pm,eta_pm,zeta_pm,i,j)+
-                weight*integrand_temporal_derivative_term(-xi_pm,eta_pm,-zeta_pm,i,j)+ 
-                weight*integrand_temporal_derivative_term(-xi_pm,-eta_pm,zeta_pm,i,j)+
-                weight*integrand_temporal_derivative_term(-xi_pm,-eta_pm,-zeta_pm,i,j)
+                std::pow(weight,3)*integrand_temporal_derivative_term(xi_pm,eta_pm,zeta_pm,i,j)+
+                std::pow(weight,3)*integrand_temporal_derivative_term(xi_pm,eta_pm,-zeta_pm,i,j)+ 
+                std::pow(weight,3)*integrand_temporal_derivative_term(xi_pm,-eta_pm,zeta_pm,i,j)+
+                std::pow(weight,3)*integrand_temporal_derivative_term(xi_pm,-eta_pm,-zeta_pm,i,j)+ 
+                std::pow(weight,3)*integrand_temporal_derivative_term(-xi_pm,eta_pm,zeta_pm,i,j)+
+                std::pow(weight,3)*integrand_temporal_derivative_term(-xi_pm,eta_pm,-zeta_pm,i,j)+ 
+                std::pow(weight,3)*integrand_temporal_derivative_term(-xi_pm,-eta_pm,zeta_pm,i,j)+
+                std::pow(weight,3)*integrand_temporal_derivative_term(-xi_pm,-eta_pm,-zeta_pm,i,j)
             ;
         }
 
@@ -202,22 +203,10 @@ class ElementMatrix{
             for(int i=0;i<8;i++){
                 for(int j=0;j<8;j++){
                     wave_matrix(i,j) = gauss_integral_m_two_spatial_derivative_term(i,j);
-                }
-            }
-            for(int i=0;i<8;i++){
-                for(int j=0;j<8;j++){
                     nodal_matrix(i,j) = gauss_integral_m_two_temporal_derivative_term(i,j);
                 }
             }
 
-            /*
-            std::cout<<"print matrix"<<std::endl;
-            std::cout<<wave_matrix<<std::endl;
-            std::cout<<nodal_matrix<<std::endl;
-
-            std::cout<<"total matrix"<<std::endl;
-            std::cout<<arma::inv(nodal_matrix)*wave_matrix<<std::endl;
-            */
         }
 
         ElementMatrix(mat init_points) : 
@@ -331,8 +320,9 @@ class Solver{
     sp_mat global_matrix;
 
     void mode_analysis(){}
-    void unsteadry_analysis(mat global_matrix,vec init_condition,double delta_t){
-        int iter =3;
+
+
+    void unsteadry_analysis(mat global_matrix,vec init_condition,double delta_t, int iter){
         std::vector<vec> point_value = {init_condition};
 
         for(int i=0;i<iter;i++){
@@ -341,19 +331,20 @@ class Solver{
             if(point_value.size()>1){
                 std::cout<<"step:"<<i<<std::endl;
                 point_value.push_back(
-                    delta_t*delta_t*global_matrix*point_value[i] + 2* point_value[i] - point_value[i-1]
+                    -delta_t*delta_t*global_matrix*point_value[i] + 2* point_value[i] - point_value[i-1]
                 );
             }else{
 
                 std::cout<<"first step"<<std::endl;
                 point_value.push_back(
-                    delta_t*delta_t*global_matrix*point_value[i] + point_value[i]
+                    -delta_t*delta_t*global_matrix*point_value[i] + point_value[i]
                 );
             }
             //std::cout<<(global_matrix*point_value[i]).t()<<std::endl;
-            //std::cout<<point_value[i].t()<<std::endl;
-            std::cout<<(global_matrix*point_value[i]).t()<<std::endl;
-            std::cout<<point_value[i](0)<<","<<point_value[i](11)<<std::endl;
+            //std::cout<<point_value[i](0)<<","<<point_value[i](5)<<","<<point_value[i](9)<<","<<std::endl;
+            //std::cout<<(global_matrix*point_value[i]).t()<<std::endl;
+            //std::cout<<point_value[i](0)<<","<<point_value[i](11)<<std::endl;
+            std::cout<<point_value[i].t()<<std::endl;
         } 
 
     }
@@ -363,7 +354,7 @@ class Solver{
 class Rendere{};
 
 class MeshUtils{
-
+    void wrire_mesh(){}
 };
 
 int main(){
@@ -380,7 +371,6 @@ int main(){
     };
 
     //ElementMatrix cell(points);
-    /*
     std::vector<Point> mesh_points={
        Point(vec({0,0,0}),0),
        Point(vec({1,0,0}),1),
@@ -407,18 +397,9 @@ int main(){
     std::cout<<global_matrix.global_matrix<<std::endl;
 
     Solver solver;
-    solver.unsteadry_analysis(global_matrix.global_matrix,vec({1,0,0,0,0,0,0,0,0,0,0,0}),0.1);
+    solver.unsteadry_analysis(global_matrix.global_matrix,vec({1,1,1,1,0,0,0,0,0,0,0,0}),0.1,400);
 
     std::cout << "シミュレーションが終了しました。\n";
-    */
-    std::vector<vec> point_value={vec({1,0,0,0,0,0,0,0})};
-    for(int i=0;i<1;i++){
-        point_value.push_back(
-            arma::inv(ElementMatrix(points).nodal_matrix)*ElementMatrix(points).wave_matrix*point_value[i]
-        );
-    }
-
-    std::cout<<point_value[1]<<std::endl;
 
     return 0;
 }

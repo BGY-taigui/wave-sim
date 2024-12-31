@@ -4,6 +4,14 @@
 #include <armadillo>
 
 #include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkUnstructuredGridWriter.h>
+#include <vtkQuad.h>
+#include <vtkCellArray.h>
+#include <vtkDoubleArray.h>
+#include <vtkPointData.h>
+#include <vtkCellData.h>
+#include <vtkXMLUnstructuredGridWriter.h>
 
 using namespace arma;
 
@@ -318,43 +326,108 @@ class Solver{
      
     public:
     sp_mat global_matrix;
+    std::vector<vec> point_values;
+    std::vector<double> times;
 
     void mode_analysis(){}
 
 
     void unsteadry_analysis(mat global_matrix,vec init_condition,double delta_t, int iter){
-        std::vector<vec> point_value = {init_condition};
+        point_values = {init_condition};
+        times ={};
 
         for(int i=0;i<iter;i++){
             
             // u(i+1)=d2p/dt2 * DT**2 + 2u(i) -u(i-1)
-            if(point_value.size()>1){
-                std::cout<<"step:"<<i<<std::endl;
-                point_value.push_back(
-                    -delta_t*delta_t*global_matrix*point_value[i] + 2* point_value[i] - point_value[i-1]
+            if(point_values.size()>1){
+                point_values.push_back(
+                    -delta_t*delta_t*global_matrix*point_values[i] + 2* point_values[i] - point_values[i-1]
                 );
             }else{
-
-                std::cout<<"first step"<<std::endl;
-                point_value.push_back(
-                    -delta_t*delta_t*global_matrix*point_value[i] + point_value[i]
+                point_values.push_back(
+                    -delta_t*delta_t*global_matrix*point_values[i] + point_values[i]
                 );
             }
-            //std::cout<<(global_matrix*point_value[i]).t()<<std::endl;
-            //std::cout<<point_value[i](0)<<","<<point_value[i](5)<<","<<point_value[i](9)<<","<<std::endl;
-            //std::cout<<(global_matrix*point_value[i]).t()<<std::endl;
-            //std::cout<<point_value[i](0)<<","<<point_value[i](11)<<std::endl;
-            std::cout<<point_value[i].t()<<std::endl;
+
+            times.push_back(delta_t*i);
+
         } 
 
     }
 
 };
 
-class Rendere{};
 
 class MeshUtils{
-    void wrire_mesh(){}
+
+    public:
+
+    void read_mesh(){}
+
+    void write_mesh(std::vector<Point> points,std::vector<Cell> cells,std::vector<vec> values,std::string filename,std::vector<double> times){
+
+
+    // vtkPointsオブジェクトを作成して座標を追加
+    auto vtk_points = vtkSmartPointer<vtkPoints>::New();
+    for (const auto& point : points) {
+        vtk_points->InsertNextPoint(point.vector(0),point.vector(1),point.vector(2));
+    }
+
+    // vtkCellArrayオブジェクトを作成してセル情報を追加
+    auto vtk_cells = vtkSmartPointer<vtkCellArray>::New();
+    for (const auto& cell : cells) {
+        vtk_cells->InsertNextCell(cell.point_ids.size());
+        for (int pointID : cell.point_ids) {
+            vtk_cells->InsertCellPoint(pointID);
+        }
+    }
+
+    // vtkIntArrayを使ってPoint IDを追加
+    auto point_id_array = vtkSmartPointer<vtkIntArray>::New();
+    point_id_array->SetName("PointIDs");
+    for (auto point : points) {
+        point_id_array->InsertNextValue(point.id);
+    }
+
+    // vtkIntArrayを使ってCell IDを追加
+    auto cell_id_array = vtkSmartPointer<vtkIntArray>::New();
+    cell_id_array->SetName("CellIDs");
+    for (auto cell : cells) {
+        cell_id_array->InsertNextValue(cell.id);
+    }
+
+    for(int i=0;i<times.size();i++){
+
+        auto data_array = vtkSmartPointer<vtkDoubleArray>::New();
+        data_array->SetName("Pressure (Pa)");
+        data_array->SetNumberOfComponents(1); 
+        data_array->SetNumberOfTuples(vtk_points->GetNumberOfPoints());
+
+        for(int point_num=0;point_num<points.size();point_num++){
+            data_array->SetValue(points[point_num].id, values[i](point_num));
+        }
+
+        // vtkUnstructuredGridオブジェクトを作成
+        auto unstructured_grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+        unstructured_grid->SetPoints(vtk_points);
+        unstructured_grid->SetCells(VTK_HEXAHEDRON, vtk_cells); // VTK_QUADは四角形セルのタイプ
+        unstructured_grid->GetPointData()->AddArray(point_id_array);
+        unstructured_grid->GetCellData()->AddArray(cell_id_array);
+
+        unstructured_grid->GetPointData()->SetScalars(data_array);
+
+        // ファイルに書き出し
+
+        std::string filename_at_the_time = filename + std::to_string(times[i]) + ".vtu";
+
+        auto writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        writer->SetFileName(std::to_chars(filename_at_the_time)); // 出力ファイル名
+        writer->SetInputData(unstructured_grid);
+        writer->Write();
+        }
+
+    }
+
 };
 
 int main(){
@@ -400,6 +473,10 @@ int main(){
     solver.unsteadry_analysis(global_matrix.global_matrix,vec({1,1,1,1,0,0,0,0,0,0,0,0}),0.1,400);
 
     std::cout << "シミュレーションが終了しました。\n";
+
+    MeshUtils mesh_utils;
+    
+    mesh_utils.write_mesh(mesh_points,mesh_cells,"aa");
 
     return 0;
 }

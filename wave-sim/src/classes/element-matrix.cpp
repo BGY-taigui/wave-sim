@@ -60,7 +60,7 @@ double ElementMatrix::integrand_spatial_derivative_term(double xi,double eta,dou
         vec Nz = Nxyz.row(2).t();
         double jacobian_det = N.jacobian_det(xi,eta,zeta);
 
-    return sound_speed*sound_speed*(
+    return -sound_speed*sound_speed*(
         Nx(i)*Nx(j)+Ny(i)*Ny(j)+Nz(i)*Nz(j)
     )*jacobian_det;
 }

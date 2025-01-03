@@ -1,4 +1,4 @@
 wave-eq
 lib
-solver/build
+wave-sim/build
 .vscode

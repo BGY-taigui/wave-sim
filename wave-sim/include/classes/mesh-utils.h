@@ -25,6 +25,6 @@ class MeshUtils{
     void read_mesh(){}
 
     void make_paraview_data_file(std::string output_dir,std::vector<double> times,std::vector<std::string> datafile_names);
-    void write_mesh(std::vector<Point> points,std::vector<Cell> cells,std::vector<arma::vec> values,std::vector<double> times);
+    void write_mesh(std::vector<Point> points,std::vector<Cell> cells,std::vector<arma::vec> values,std::vector<double> times,std::string output_dir);
 
 };

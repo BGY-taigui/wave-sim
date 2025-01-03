@@ -53,9 +53,7 @@ void MeshUtils::make_paraview_data_file(std::string output_dir,std::vector<doubl
 }
 
 
-void MeshUtils::write_mesh(std::vector<Point> points,std::vector<Cell> cells,std::vector<vec> values,std::vector<double> times){
-
-    std::string output_dir = "output_datas";
+void MeshUtils::write_mesh(std::vector<Point> points,std::vector<Cell> cells,std::vector<vec> values,std::vector<double> times,std::string output_dir){
 
     if (!std::__fs::filesystem::exists(output_dir)) {
         std::__fs::filesystem::create_directories(output_dir);
@@ -128,15 +126,3 @@ for(auto time : times){
 make_paraview_data_file(output_dir,times,output_filenames);
 
 }
-
-
-/*
-class MeshUtils{
-
-    public:
-
-
-
-
-};
-*/

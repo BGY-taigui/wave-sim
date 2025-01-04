@@ -13,15 +13,13 @@ class Solver{
     struct EachModeResult
     {
         std::vector<double> times;
-        std::vector<arma::vec> values;
+        std::vector<arma::vec> point_values;
     };
 
     struct ModeAnalysisResult
     {
         arma::vec freqency;
         int display_mode_num;
-        std::vector<double> times;
-        std::vector<std::vector<arma::vec>> values;
 
         std::vector<EachModeResult> modes;
     };

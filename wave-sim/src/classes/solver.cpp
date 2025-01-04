@@ -38,38 +38,38 @@ Solver::ModeAnalysisResult Solver::mode_analysis(mat global_matrix, int display_
     result.freqency = freqency;
 
     //TODO これを引数にする もしくは自動にする
-    int display_step_number = 100;
+    int display_time_step_number = 100;
 
-    double time_span = 10;
-    double time_step = time_span/display_step_number;
-
-    std::vector<double> times = {};
-
-    for(int i=0;i<int(time_span/time_step);i++){
-        times.push_back(time_step * i);
-    }
-
-
-    result.times = times;
-    result.values = std::vector<std::vector<arma::vec>>(display_mode_num,std::vector<vec>(times.size(),vec(eign_val.size())));
-
-    //result.modes = std::vector<EachModeResult>(display_mode_num);
-
-    std::vector<vec> values={};
+    result.modes = std::vector<EachModeResult>(display_mode_num);
 
     // 振動数が少ない順にソートされたモードを指定された数だけ出力する
     for(int i =0; i<display_mode_num;i++){
-        for(int j=0; j<times.size();j++){
 
-            cx_vec result_complex = eign_vec.col(sorted_index[i]) * exp(angular_velocity[sorted_index[i]]*times[j]);
+        std::vector<vec> each_mode_point_values(display_time_step_number);
+        std::vector<double> each_mode_times(display_time_step_number);
+
+        double time_span = 1/freqency(sorted_index[i]);
+        double time_step = time_span/display_time_step_number;
+
+        for(int j=0;j<display_time_step_number;j++){
+            each_mode_times[j]= time_step * j;
+        }
+
+        for(int j=0; j<display_time_step_number;j++){
+
+            cx_vec result_complex = eign_vec.col(sorted_index[i]) * exp(angular_velocity[sorted_index[i]]*each_mode_times[j]);
 
             vec result_real(result_complex.size());
+
             for (int k=0;k<result_real.size();k++){
                 result_real(k) = result_complex(k).real();
             }
 
-            result.values[i][j] = result_real;
+            each_mode_point_values[j] = result_real;
         }
+
+        result.modes[i].point_values = each_mode_point_values;
+        result.modes[i].times = each_mode_times;
     }
 
     return result;

@@ -13,6 +13,10 @@ using namespace arma;
 
 int main(){
 
+
+    //TODO メッシュ読み込みを実装する
+    //TODO condition_importerを実装する
+
     std::vector<Point> mesh_points={
        Point(vec({0,0,0}),0),
        Point(vec({1,0,0}),1),
@@ -29,10 +33,10 @@ int main(){
        Point(vec({0,1,2}),11),
 
        
-       Point(vec({0,0,3}),12),
-       Point(vec({1,0,3}),13),
-       Point(vec({1,1,3}),14),
-       Point(vec({0,1,3}),15),
+       Point(vec({0,0,2.7}),12),
+       Point(vec({1,0,2.7}),13),
+       Point(vec({1,1,3.3}),14),
+       Point(vec({0,1,3.3}),15),
        
        Point(vec({0,0,4}),16),
        Point(vec({1,0,4}),17),
@@ -60,7 +64,7 @@ int main(){
     mesh_utils.write_mesh(mesh_points,mesh_cells,unsteadry_analysis_result.point_values,unsteadry_analysis_result.times,"output_datas");
 
     for(int i=0;i<mode_analysis_result.display_mode_num;i++){
-        mesh_utils.write_mesh(mesh_points,mesh_cells,mode_analysis_result.values[i],mode_analysis_result.times,"output_mode"+std::to_string(i+1));
+        mesh_utils.write_mesh(mesh_points,mesh_cells,mode_analysis_result.modes[i].point_values,mode_analysis_result.modes[i].times,"output_mode"+std::to_string(i+1));
     }
 
     return 0;

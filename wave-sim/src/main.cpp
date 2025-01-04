@@ -49,18 +49,19 @@ int main(){
 
     GlobalMatrix global_matrix(mesh_cells,mesh_points);
 
-    std::cout<<global_matrix.global_matrix<<std::endl;
 
     Solver solver;
-    solver.unsteadry_analysis(global_matrix.global_matrix,vec({1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),0.01,1000);
+    Solver::UnsteadryAnalysisResult unsteadry_analysis_result = solver.unsteadry_analysis(global_matrix.global_matrix,vec({1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),0.01,1000);
 
-    solver.mode_analysis(global_matrix.global_matrix);
-
-    std::cout << "シミュレーションが終了しました。\n";
+    Solver::ModeAnalysisResult mode_analysis_result= solver.mode_analysis(global_matrix.global_matrix,10);
 
     MeshUtils mesh_utils;
     
-    mesh_utils.write_mesh(mesh_points,mesh_cells,solver.point_values,solver.times);
+    mesh_utils.write_mesh(mesh_points,mesh_cells,unsteadry_analysis_result.point_values,unsteadry_analysis_result.times,"output_datas");
+
+    for(int i=0;i<mode_analysis_result.display_mode_num;i++){
+        mesh_utils.write_mesh(mesh_points,mesh_cells,mode_analysis_result.values[i],mode_analysis_result.times,"output_mode"+std::to_string(i+1));
+    }
 
     return 0;
 }

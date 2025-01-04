@@ -9,10 +9,33 @@
 class Solver{
      
     public:
-    arma::sp_mat global_matrix;
-    std::vector<arma::vec> point_values;
-    std::vector<double> times;
 
-    void mode_analysis(arma::mat global_matrix);
-    void unsteadry_analysis(arma::mat global_matrix,arma::vec init_condition,double delta_t, int iter);
+    struct EachModeResult
+    {
+        std::vector<double> times;
+        std::vector<arma::vec> values;
+    };
+
+    struct ModeAnalysisResult
+    {
+        arma::vec freqency;
+        int display_mode_num;
+        std::vector<double> times;
+        std::vector<std::vector<arma::vec>> values;
+
+        std::vector<EachModeResult> modes;
+    };
+
+    struct UnsteadryAnalysisResult
+    {
+        arma::sp_mat global_matrix;
+        std::vector<arma::vec> point_values;
+        std::vector<double> times;
+    };
+
+
+    ModeAnalysisResult mode_analysis(arma::mat global_matrix,int mode_num);
+    UnsteadryAnalysisResult unsteadry_analysis(arma::mat global_matrix,arma::vec init_condition,double delta_t, int iter);
+
+
 };

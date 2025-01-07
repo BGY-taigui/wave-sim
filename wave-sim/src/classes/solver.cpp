@@ -20,9 +20,18 @@ Solver::ModeAnalysisResult Solver::mode_analysis(mat global_matrix, int display_
     arma::cx_vec eign_val;
     arma::cx_mat eign_vec;
 
-    std::cout<<"computing eign value and vector"<<std::endl;
+    //std::cout<<"computing eign value and vector"<<std::endl;
 
-    arma::eig_gen(eign_val,eign_vec,global_matrix);
+    //arma::eig_gen(eign_val,eign_vec,global_matrix);
+
+    std::cout<<"computing sp mat"<<std::endl;
+
+    arma::sp_mat sp_gm(global_matrix);
+
+    std::cout<<"computing eign limited value and vector"<<std::endl;
+
+    arma::eigs_gen(eign_val,eign_vec,sp_gm,display_mode_num,"sr");
+
 
     arma::cx_vec angular_velocity(eign_val.size());
     arma::vec freqency(eign_val.size());

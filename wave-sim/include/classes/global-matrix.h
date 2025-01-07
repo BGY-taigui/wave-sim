@@ -23,6 +23,8 @@ class GlobalMatrix{
 
     void boundary_condittion_zero_point(std::vector<Point> zero_value_points);
 
+    int search_corresponding_column(int point_id);
+
     GlobalMatrix(std::vector<Cell>& mesh_cells,std::vector<Point>& mesh_points);
 
 };

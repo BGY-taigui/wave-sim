@@ -17,6 +17,11 @@ int main(){
     //TODO メッシュ読み込みを実装する
     //TODO condition_importerを実装する
 
+    MeshUtils meshutils;
+    MeshUtils::points_cells point_cells = meshutils.read_mesh("aa.vtk");
+
+    /*
+
     std::vector<Point> mesh_points={
        Point(vec({0,0,0}),0),
        Point(vec({1,0,0}),1),
@@ -51,21 +56,31 @@ int main(){
         Cell(std::vector<int>{12,13,14,15,16,17,18,19},4),
     };
 
-    GlobalMatrix global_matrix(mesh_cells,mesh_points);
+    */
 
+    std::cout<<"creating Global Matrix ..."<<std::endl;
+    GlobalMatrix global_matrix(point_cells.cells,point_cells.points);
 
     Solver solver;
+    /*
     Solver::UnsteadryAnalysisResult unsteadry_analysis_result = solver.unsteadry_analysis(global_matrix.global_matrix,vec({1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),0.01,1000);
+    
+    */
 
+    std::cout<<"Mode Analysing ..."<<std::endl;
     Solver::ModeAnalysisResult mode_analysis_result= solver.mode_analysis(global_matrix.global_matrix,10);
 
     MeshUtils mesh_utils;
     
+    /*
     mesh_utils.write_mesh(mesh_points,mesh_cells,unsteadry_analysis_result.point_values,unsteadry_analysis_result.times,"output_datas");
+    */
 
     for(int i=0;i<mode_analysis_result.display_mode_num;i++){
-        mesh_utils.write_mesh(mesh_points,mesh_cells,mode_analysis_result.modes[i].point_values,mode_analysis_result.modes[i].times,"output_mode"+std::to_string(i+1));
+        mesh_utils.write_mesh(point_cells.points,point_cells.cells,mode_analysis_result.modes[i].point_values,mode_analysis_result.modes[i].times,"output_mode"+std::to_string(i+1));
     }
 
+
     return 0;
+
 }

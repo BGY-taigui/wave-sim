@@ -7,6 +7,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkUnstructuredGridWriter.h>
+#include <vtkUnstructuredGridReader.h>
 #include <vtkQuad.h>
 #include <vtkCellArray.h>
 #include <vtkDoubleArray.h>
@@ -19,7 +20,73 @@
 using namespace arma;
 
 // TODO これ実装
-//void MeshUtils::read_mesh(){}
+MeshUtils::points_cells MeshUtils::read_mesh(std::string vtk_filename){
+
+    MeshUtils::points_cells points_cells;
+    points_cells.points = {};
+    points_cells.cells = {};
+    
+
+    auto reader = vtkSmartPointer<vtkUnstructuredGridReader>::New();
+    reader->SetFileName(vtk_filename.c_str());
+    std::cout<<"loading vtk file"<<std::endl;
+    reader->Update();
+
+    vtkUnstructuredGrid* mesh = reader->GetOutput();
+
+    // メッシュの基本情報を表示
+    std::cout << "Successfully loaded: " << vtk_filename << std::endl;
+    std::cout << "Number of points: " << mesh->GetNumberOfPoints() << std::endl;
+    std::cout << "Number of cells: " << mesh->GetNumberOfCells() << std::endl;
+
+
+
+    // 各点の座標を表示
+    for (vtkIdType i = 0; i < mesh->GetNumberOfPoints(); ++i) {
+        double p[3];
+        mesh->GetPoint(i, p);
+        //TODO これ消す
+        //std::cout<<p[0]<<","<<p[1]<<","<<p[2]<<std::endl;
+
+        Point point(vec(p,sizeof(p)/sizeof(p[0])),i);
+        points_cells.points.push_back(point);
+
+    }
+
+    // 各セル（要素）の情報を表示
+
+    int cell_id_count =0;
+    for (vtkIdType i = 0; i < mesh->GetNumberOfCells(); ++i) {
+        vtkCell* cell = mesh->GetCell(i);
+        if(cell->GetCellType() == 12){
+            
+            std::vector<int> point_ids(8);
+            for(int num=0;num<cell->GetNumberOfPoints();num++){
+                point_ids[num] = cell->GetPointId(num);
+            }
+
+            cell_id_count +=1;
+
+            Cell cell(point_ids,cell_id_count);
+
+            points_cells.cells.push_back(cell);
+
+        }
+
+
+        /*
+        std::cout << "  Cell " << i << " (type " << cell->GetCellType() << "): ";
+        for (vtkIdType j = 0; j < cell->GetNumberOfPoints(); ++j) {
+            std::cout << cell->GetPointId(j) << " ";
+        }
+        std::cout << std::endl;
+*/
+    }
+
+
+    return points_cells;
+
+}
 
 
 void MeshUtils::make_paraview_data_file(std::string output_dir,std::vector<double> times,std::vector<std::string> datafile_names){    // PVDファイルのパス

@@ -31,6 +31,7 @@ class Solver{
         std::vector<double> times;
     };
 
+    void mode_analysis_frequency(arma::sp_mat global_wave_matrix,arma::sp_mat gloabl_nodal_matrix);
 
     ModeAnalysisResult mode_analysis(arma::mat global_matrix,int mode_num);
     UnsteadryAnalysisResult unsteadry_analysis(arma::mat global_matrix,arma::vec init_condition,double delta_t, int iter);

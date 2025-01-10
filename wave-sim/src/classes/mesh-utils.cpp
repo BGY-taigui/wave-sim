@@ -15,11 +15,221 @@
 #include <vtkCellData.h>
 #include <vtkXMLUnstructuredGridWriter.h>
 
+#include <vtkCGNSReader.h>
+#include <vtkMultiBlockDataSet.h>
+#include <vtkDataSet.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkPoints.h>
+#include <vtkCell.h>
+#include <vtkRenderer.h>
+#include <vtkRenderWindow.h>
+#include <vtkRenderWindowInteractor.h>
+#include <vtkDataSetMapper.h>
+#include <vtkActor.h>
+
+
 #include <mesh-utils.h>
 
 using namespace arma;
 
-// TODO これ実装
+MeshUtils::points_cells MeshUtils::read_cgns_file(std::string cgns_filename){
+    points_cells points_cells;
+
+    std::cout<<"-------------------"<<std::endl;
+
+     // CGNSファイルのリーダー
+    auto reader = vtkSmartPointer<vtkCGNSReader>::New();
+    reader->SetFileName(cgns_filename.c_str());
+    reader->Update();
+
+    // マルチブロックデータセットを取得
+    auto multiBlockDataSet = reader->GetOutput();
+    if (!multiBlockDataSet) {
+        std::cerr << "Error: Unable to read the CGNS file." << std::endl;
+    }
+
+    std::cout << "Number of blocks: " << multiBlockDataSet->GetNumberOfBlocks() << std::endl;
+
+    // 最初のブロックを処理（例として）
+    auto block = multiBlockDataSet->GetBlock(0);
+    if (!block) {
+        std::cerr << "Error: Block 0 is empty." << std::endl;
+    }
+
+    for (unsigned int i = 0; i < multiBlockDataSet->GetNumberOfBlocks(); ++i) {
+        auto block = multiBlockDataSet->GetBlock(i);
+        if (!block) {
+            std::cout << "Block " << i << " is empty." << std::endl;
+            continue;
+        }
+
+        // ブロックの型を出力
+        std::cout << "Block " << i << " class name: " << block->GetClassName() << std::endl;
+        
+        if (auto nestedMultiBlock = vtkMultiBlockDataSet::SafeDownCast(block)) {
+            std::cout<<"this is vtkm dataset "<<std::endl;
+
+            for (unsigned int j = 0; j < nestedMultiBlock->GetNumberOfBlocks(); ++j) {
+                auto nestedBlock = nestedMultiBlock->GetBlock(j);
+                if (!nestedBlock) {
+                    std::cout << "Nested block " << j << " is empty." << std::endl;
+                    continue;
+                }
+
+                auto vtk_dataset = vtkDataSet::SafeDownCast(nestedBlock);
+
+                // ネストされたブロックの型を出力
+                std::cout << "Nested block " << j << " class name: " << nestedBlock->GetClassName() << std::endl;
+
+                //pointとCellの数を表示
+
+                std::cout << "Number of points: " << vtk_dataset->GetNumberOfPoints() << std::endl;
+                std::cout << "Number of cells: " << vtk_dataset->GetNumberOfCells() << std::endl;
+
+                
+                // 各点の座標を表示
+                for (vtkIdType i = 0; i < vtk_dataset->GetNumberOfPoints(); ++i) {
+                    double p[3];
+                    vtk_dataset->GetPoint(i, p);
+                    //TODO これ消す
+                    //std::cout<<p[0]<<","<<p[1]<<","<<p[2]<<std::endl;
+
+                    Point point(vec(p,sizeof(p)/sizeof(p[0])),i);
+                    points_cells.points.push_back(point);
+
+                }
+
+                // 各セル（要素）の情報を表示
+
+                int cell_id_count =0;
+                for (vtkIdType i = 0; i < vtk_dataset->GetNumberOfCells(); ++i) {
+                    vtkCell* cell = vtk_dataset->GetCell(i);
+                    if(cell->GetCellType() == 12){
+                        
+                        std::vector<int> point_ids(8);
+                        for(int num=0;num<cell->GetNumberOfPoints();num++){
+                            point_ids[num] = cell->GetPointId(num);
+                        }
+
+                        cell_id_count +=1;
+
+                        Cell cell(point_ids,cell_id_count);
+
+                        points_cells.cells.push_back(cell);
+
+                    }
+
+                }
+
+            }
+        }
+
+    }
+
+
+    return points_cells;
+}
+
+
+MeshUtils::points_cells MeshUtils::read_vtm_file(std::string vtm_filename){
+
+    points_cells points_cells;
+
+    // VTMファイルのリーダー
+    auto reader = vtkSmartPointer<vtkXMLMultiBlockDataReader>::New();
+    reader->SetFileName(vtm_filename.c_str());
+    reader->Update();
+
+
+    std::cout<<"-------------------"<<std::endl;
+
+
+    // マルチブロックデータセットを取得
+    //auto multiBlockDataSet = reader->GetOutput();
+
+    auto multiBlockDataSet = vtkMultiBlockDataSet::SafeDownCast(reader->GetOutput());
+
+
+    if (!multiBlockDataSet) {
+        std::cerr << "Error: Unable to read the VTM file." << std::endl;
+    }else{
+        std::cout << "Successfully loaded :"<<vtm_filename<<std::endl;
+    }
+
+    std::cout << "Number of blocks: " << multiBlockDataSet->GetNumberOfBlocks() << std::endl;
+
+    //とりあえずブロックは一つの場合だけ処理する
+    //TODO 複数ブロックにも対応させるか?
+    if(multiBlockDataSet->GetNumberOfBlocks() != 1){
+        std::cout << "WARNING::VTM file contain more than 1 blocks" << std::endl;
+        std::cout << "Processing Only One Block" << std::endl;
+    }
+
+    // 各ブロックを処理
+    for (unsigned int i = 0; i < multiBlockDataSet->GetNumberOfBlocks(); ++i) {
+        auto block = multiBlockDataSet->GetBlock(i);
+        if (block) {
+            std::cout << "Block " << i << ": " << block->GetClassName() << std::endl;
+        } else {
+            std::cout << "Block " << i << " is empty." << std::endl;
+        }
+    }
+
+    auto block = multiBlockDataSet->GetBlock(0);
+    if (block) {
+
+      // ブロックをvtkDataSetとして扱う
+        auto dataSet = vtkDataSet::SafeDownCast(block);
+        if (!dataSet) {
+            std::cerr << "Block is not a vtkDataSet." << std::endl;
+        }else{
+            //TODO　全体処理をここに入れる
+        }
+
+        // Pointsを取得
+        auto points = dataSet->GetPoints();
+        if (points) {
+            std::cout << "Number of points: " << points->GetNumberOfPoints() << std::endl;
+            for (vtkIdType i = 0; i < points->GetNumberOfPoints(); ++i) {
+                double p[3];
+                points->GetPoint(i, p);
+                std::cout << "Point " << i << ": (" << p[0] << ", " << p[1] << ", " << p[2] << ")" << std::endl;
+
+                Point point(vec(p,sizeof(p)/sizeof(p[0])),i); 
+                points_cells.points.push_back(point);
+            }
+        }
+
+        // Cellsを取得
+        vtkIdType numberOfCells = dataSet->GetNumberOfCells();
+        std::cout << "Number of cells: " << numberOfCells << std::endl;
+        for (vtkIdType i = 0; i < numberOfCells; ++i) {
+            auto cell = dataSet->GetCell(i);
+            std::cout << "Cell " << i << " has " << cell->GetNumberOfPoints() << " points." << std::endl;
+
+            if(cell->GetCellType() == 12){
+                
+                std::vector<int> point_ids(8);
+                for(int num=0;num<cell->GetNumberOfPoints();num++){
+                    point_ids[num] = cell->GetPointId(num);
+                }
+
+            Cell cell(point_ids,i);
+
+            points_cells.cells.push_back(cell);
+
+        }
+
+
+        }
+    } else {
+        std::cout << "Block is empty." << std::endl;
+    }
+
+    return points_cells;
+
+}
+
 MeshUtils::points_cells MeshUtils::read_mesh(std::string vtk_filename){
 
     MeshUtils::points_cells points_cells;

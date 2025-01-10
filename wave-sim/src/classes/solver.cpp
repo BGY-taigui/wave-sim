@@ -11,6 +11,65 @@
 
 using namespace arma;
 
+void Solver::mode_analysis_frequency(sp_mat global_wave_matrix,sp_mat gloabl_nodal_matrix){
+
+    double start_freqency = 0;
+    double end_freqency = 0.1;
+    double freqency_step = (end_freqency - start_freqency)/10;
+    std::vector<double> det_values(0);
+
+    std::cout<<"w m:"<<global_wave_matrix.max()<<"n m"<<gloabl_nodal_matrix.max()<<std::endl;
+    std::cout<<det(mat(global_wave_matrix))<<std::endl;
+    std::cout<<det(mat(gloabl_nodal_matrix))<<std::endl;
+    std::cout<<mat(global_wave_matrix/global_wave_matrix.max()).max()<<std::endl;
+
+    for(double freqency = start_freqency;freqency<end_freqency;freqency+=freqency_step){
+
+        std::cout<<"computing det value. freq:"<<freqency;
+
+        double alpha = 2 * M_PI * freqency;
+
+        mat mat = arma::mat(global_wave_matrix+pow(alpha,2)*gloabl_nodal_matrix);
+
+        arma::mat L, U, P;
+        bool success = arma::lu(L, U, P, mat); // LU分解
+
+        std::cout<<"LU success:"<<success;
+
+        // 対数行列式の計算
+        //double log_det_U = arma::sum(arma::log(U.diag())); // U の対角成分の対数の和
+
+        std::complex<double> log_det_U(0.0, 0.0); // 対数行列式の初期値
+
+        for (arma::uword i = 0; i < U.n_rows; ++i) {
+            double diag_elem = U(i, i);
+
+            if (diag_elem > 0) {
+                log_det_U += std::log(diag_elem); // 正の対角成分はそのまま
+            } else if (diag_elem < 0) {
+                log_det_U += std::log(-diag_elem) + std::complex<double>(0.0, arma::datum::pi); // 負の対角成分
+            } else {
+                std::cerr << "Matrix is singular (zero diagonal element)." << std::endl;
+            }
+        }
+
+
+
+        //float det_value = log10(arma::det(mat));
+        //float det_value = arma::det(mat);
+
+        std::cout<<" det:"<<log_det_U<<std::endl;
+
+        //det_values.push_back(log_det_U.real());
+    }
+
+    std::cout<<"eig pair"<<std::endl;
+    arma::eig_pair(arma::mat(global_wave_matrix),arma::mat(gloabl_nodal_matrix));
+
+}
+
+
+
 Solver::ModeAnalysisResult Solver::mode_analysis(mat global_matrix, int display_mode_num){
     
     Solver::ModeAnalysisResult result;
@@ -30,7 +89,7 @@ Solver::ModeAnalysisResult Solver::mode_analysis(mat global_matrix, int display_
 
     std::cout<<"computing eign limited value and vector"<<std::endl;
 
-    arma::eigs_gen(eign_val,eign_vec,sp_gm,display_mode_num,"sr");
+    arma::eigs_gen(eign_val,eign_vec,sp_gm,display_mode_num,"sm");
 
 
     arma::cx_vec angular_velocity(eign_val.size());

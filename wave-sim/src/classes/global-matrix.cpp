@@ -20,6 +20,17 @@ void GlobalMatrix::boundary_condittion_zero_point(std::vector<Point> zero_value_
 
 }
 
+mat get_single_global_matrix(){
+
+    std::cout<<"cerating global single matrix ..."<<std::endl;
+    //疎行列を使ってメモリ使用を効率化するなら、lapackじゃなくてsuperLUを使うように変更
+    global_matrix = arma::spsolve(global_nodal_matrix,global_wave_matrix,"lapack");
+    std::cout<<"end gathering"<<std::endl;
+
+
+    return global_matrix;
+}
+
 
 int GlobalMatrix::search_corresponding_column(int point_id){
 
@@ -94,9 +105,5 @@ GlobalMatrix::GlobalMatrix(std::vector<Cell>& mesh_cells,std::vector<Point>& mes
 
     }
 
-    std::cout<<"cerating global single matrix ..."<<std::endl;
-    //疎行列を使ってメモリ使用を効率化するなら、lapackじゃなくてsuperLUを使うように変更
-    global_matrix = arma::spsolve(global_nodal_matrix,global_wave_matrix,"lapack");
-    std::cout<<"end gathering"<<std::endl;
 
 }

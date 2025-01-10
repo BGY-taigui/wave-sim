@@ -18,10 +18,13 @@ int main(){
     //TODO condition_importerを実装する
 
     MeshUtils meshutils;
-    MeshUtils::points_cells point_cells = meshutils.read_mesh("aa.vtk");
+    //MeshUtils::points_cells point_cells = meshutils.read_mesh("aa.vtk");
+
+    //meshutils.read_vtm_file("aa.vtm");
+    MeshUtils::points_cells point_cells = meshutils.read_cgns_file("aa.cgns");
+
 
     /*
-
     std::vector<Point> mesh_points={
        Point(vec({0,0,0}),0),
        Point(vec({1,0,0}),1),
@@ -55,9 +58,12 @@ int main(){
         Cell(std::vector<int>{8,9,10,11,12,13,14,15},3),
         Cell(std::vector<int>{12,13,14,15,16,17,18,19},4),
     };
+    MeshUtils::points_cells point_cells;
+    point_cells.cells = mesh_cells;
+    point_cells.points = mesh_points;
+
 
     */
-
     std::cout<<"creating Global Matrix ..."<<std::endl;
     GlobalMatrix global_matrix(point_cells.cells,point_cells.points);
 
@@ -67,8 +73,10 @@ int main(){
     
     */
 
+   solver.mode_analysis_frequency(sp_mat(global_matrix.global_wave_matrix),global_matrix.global_nodal_matrix);
+
     std::cout<<"Mode Analysing ..."<<std::endl;
-    Solver::ModeAnalysisResult mode_analysis_result= solver.mode_analysis(global_matrix.global_matrix,10);
+    Solver::ModeAnalysisResult mode_analysis_result= solver.mode_analysis(global_matrix.global_matrix,5);
 
     MeshUtils mesh_utils;
     

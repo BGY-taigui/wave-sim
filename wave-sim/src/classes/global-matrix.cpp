@@ -20,13 +20,18 @@ void GlobalMatrix::boundary_condittion_zero_point(std::vector<Point> zero_value_
 
 }
 
-mat get_single_global_matrix(){
+mat GlobalMatrix::get_single_global_matrix(bool use_superlu){
 
     std::cout<<"cerating global single matrix ..."<<std::endl;
     //疎行列を使ってメモリ使用を効率化するなら、lapackじゃなくてsuperLUを使うように変更
-    global_matrix = arma::spsolve(global_nodal_matrix,global_wave_matrix,"lapack");
-    std::cout<<"end gathering"<<std::endl;
 
+    if (use_superlu){
+        global_matrix = arma::spsolve(global_nodal_matrix,global_wave_matrix,"superlu");
+        std::cout<<"end gathering"<<std::endl;
+    }else{
+        global_matrix = arma::spsolve(global_nodal_matrix,global_wave_matrix,"lapack");
+        std::cout<<"end gathering"<<std::endl;
+    }
 
     return global_matrix;
 }

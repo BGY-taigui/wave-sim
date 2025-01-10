@@ -25,7 +25,7 @@ class GlobalMatrix{
 
     int search_corresponding_column(int point_id);
 
-    arma::mat get_single_global_matrix();
+    arma::mat get_single_global_matrix(bool use_superlu);
 
     GlobalMatrix(std::vector<Cell>& mesh_cells,std::vector<Point>& mesh_points);
 

@@ -25,6 +25,10 @@ mat GlobalMatrix::get_single_global_matrix(bool use_superlu){
     std::cout<<"cerating global single matrix ..."<<std::endl;
     //疎行列を使ってメモリ使用を効率化するなら、lapackじゃなくてsuperLUを使うように変更
 
+    global_matrix = arma::spsolve(global_nodal_matrix,global_wave_matrix,"lapack");
+    std::cout<<"end gathering"<<std::endl;
+
+    /*
     if (use_superlu){
         global_matrix = arma::spsolve(global_nodal_matrix,global_wave_matrix,"superlu");
         std::cout<<"end gathering"<<std::endl;
@@ -32,10 +36,22 @@ mat GlobalMatrix::get_single_global_matrix(bool use_superlu){
         global_matrix = arma::spsolve(global_nodal_matrix,global_wave_matrix,"lapack");
         std::cout<<"end gathering"<<std::endl;
     }
+    */
 
     return global_matrix;
 }
 
+void GlobalMatrix::get_corresponding_point_id_indexes(){
+
+    std::vector<int> indexes(corresponding_point_ids.size()+1);
+
+    for(int row=0;row<corresponding_point_ids.size();row++){
+        indexes[corresponding_point_ids[row]] = row;
+    }
+
+    corresponding_point_id_indexes = indexes;
+
+};
 
 int GlobalMatrix::search_corresponding_column(int point_id){
 
@@ -66,6 +82,7 @@ GlobalMatrix::GlobalMatrix(std::vector<Cell>& mesh_cells,std::vector<Point>& mes
         corresponding_point_ids[i]=mesh_points[i].id;
     }
 
+    get_corresponding_point_id_indexes();
     
     for(auto& cell : mesh_cells){
         //全体行列を一旦8行、列分0で拡大する
@@ -91,10 +108,15 @@ GlobalMatrix::GlobalMatrix(std::vector<Cell>& mesh_cells,std::vector<Point>& mes
         global_nodal_matrix += gather_matrix.L.t() * element_matrix.nodal_matrix * gather_matrix.L;
         */
 
+
         for(int i=0;i<8;i++){
             for(int j=0;j<8;j++){
                 int global_row = search_corresponding_column(cell.point_ids[i]);
                 int global_col = search_corresponding_column(cell.point_ids[j]);
+                /*
+                int global_row = corresponding_point_id_indexes[cell.point_ids[i]];
+                int global_col = corresponding_point_id_indexes[cell.point_ids[j]];
+                */
 
                 global_wave_matrix(global_row,global_col) = 
                     global_wave_matrix(global_row,global_col) + 

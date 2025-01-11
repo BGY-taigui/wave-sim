@@ -62,10 +62,12 @@ int main(){
     point_cells.cells = mesh_cells;
     point_cells.points = mesh_points;
 
-
     */
+
     std::cout<<"creating Global Matrix ..."<<std::endl;
     GlobalMatrix global_matrix(point_cells.cells,point_cells.points);
+
+    global_matrix.get_single_global_matrix(true);
 
     Solver solver;
     /*
@@ -76,7 +78,7 @@ int main(){
    solver.mode_analysis_frequency(sp_mat(global_matrix.global_wave_matrix),global_matrix.global_nodal_matrix);
 
     std::cout<<"Mode Analysing ..."<<std::endl;
-    Solver::ModeAnalysisResult mode_analysis_result= solver.mode_analysis(global_matrix.global_matrix,5);
+    Solver::ModeAnalysisResult mode_analysis_result= solver.mode_analysis(global_matrix.global_matrix,10);
 
     MeshUtils mesh_utils;
     

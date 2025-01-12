@@ -16,17 +16,17 @@ class GlobalMatrix{
     double sound_speed;
 
     arma::vec point_vector;
+    // index:row value:point_id
     std::vector<int> corresponding_point_ids;
+    // index:point_id value:row
     std::vector<int> corresponding_point_id_indexes;
     arma::mat global_wave_matrix;
     arma::sp_mat global_nodal_matrix;
     arma::mat global_matrix;
 
-    void boundary_condittion_zero_point(std::vector<Point> zero_value_points);
+    void boundary_condittion_zero_point(std::vector<int> zero_value_point_ids);
 
     void get_corresponding_point_id_indexes();
-
-    int search_corresponding_column(int point_id);
 
     arma::mat get_single_global_matrix(bool use_superlu);
 

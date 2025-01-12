@@ -25,4 +25,5 @@ class ElementMatrix{
         double integrand_temporal_derivative_term(double xi,double eta,double zeta,int i,int j);
         void make_element_matrix();
         ElementMatrix(arma::mat init_points);
+        ElementMatrix(arma::mat init_points,double init_sound_speed);
 };

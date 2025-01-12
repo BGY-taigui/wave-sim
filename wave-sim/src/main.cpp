@@ -23,6 +23,9 @@ int main(){
     //meshutils.read_vtm_file("aa.vtm");
     MeshUtils::points_cells point_cells = meshutils.read_cgns_file("aa.cgns");
 
+    for(int i=0;i<point_cells.cells.size();i++){
+        point_cells.cells[i].sound_speed = 1100;
+    }
 
     /*
     std::vector<Point> mesh_points={

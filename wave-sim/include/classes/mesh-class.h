@@ -15,5 +15,7 @@ class Cell{
         std::vector<int> point_ids;
         int id;
 
+        double sound_speed;
+
         Cell(std::vector<int> init_point_ids,int init_id);
 };

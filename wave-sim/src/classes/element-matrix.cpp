@@ -94,3 +94,14 @@ ElementMatrix::ElementMatrix(mat init_points) :
     make_element_matrix();
 
 }
+
+ElementMatrix::ElementMatrix(mat init_points,double init_sound_speed) : 
+    sound_speed(init_sound_speed),
+    N(init_points),
+    wave_matrix(8,8,arma::fill::zeros),
+    nodal_matrix(8,8,arma::fill::zeros) 
+{
+    points = init_points;
+    make_element_matrix();
+
+}

@@ -11,6 +11,18 @@
 
 using namespace arma;
     
+void GlobalMatrix::define_condittion_zero_point(arma::vec center_vec, double radius,std::vector<Point>& mesh_points){
+
+    std::vector<int> zero_value_point_ids;
+
+    for(int i=0;i<corresponding_point_ids.size();i++){
+        if (arma::norm(center_vec - mesh_points[corresponding_point_ids[i]].vector) < radius){
+            zero_value_point_ids.push_back(corresponding_point_ids[i]);
+        }
+    }
+
+    boundary_condittion_zero_point(zero_value_point_ids);
+}
 
 void GlobalMatrix::boundary_condittion_zero_point(std::vector<int> zero_value_point_ids){
 

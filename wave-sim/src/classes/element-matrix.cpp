@@ -18,7 +18,6 @@ double ElementMatrix::gauss_integral_m_two_spatial_derivative_term(int i,int j){
     double eta_pm = 0.577305;
     double zeta_pm = 0.577305;
 
-    //TODO本当に2次のガウス積分であってるか
     return 
         std::pow(weight,3)*integrand_spatial_derivative_term(xi_pm,eta_pm,zeta_pm,i,j)+
         std::pow(weight,3)*integrand_spatial_derivative_term(xi_pm,eta_pm,-zeta_pm,i,j)+ 

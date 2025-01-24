@@ -121,7 +121,7 @@ Solver::ModeAnalysisResult Solver::mode_analysis(mat global_matrix, int display_
 
 
         mode_num++;
-        while(eign_val(sorted_index[mode_num]).imag() != 0 | eign_val(sorted_index[mode_num]).real() < 0){
+        while(eign_val(sorted_index[mode_num]).imag() != 0 | eign_val(sorted_index[mode_num]).real() <= 0){
             mode_num++;
         }
 

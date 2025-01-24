@@ -26,6 +26,8 @@ class GlobalMatrix{
 
     void boundary_condittion_zero_point(std::vector<int> zero_value_point_ids);
 
+    void define_condittion_zero_point(arma::vec center_vec, double radius,std::vector<Point>& mesh_points);
+
     void get_corresponding_point_id_indexes();
 
     arma::mat get_single_global_matrix(bool use_superlu);

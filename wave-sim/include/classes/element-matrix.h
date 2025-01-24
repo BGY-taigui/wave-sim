@@ -9,7 +9,6 @@
 class ElementMatrix{
     
     private: 
-        //TODO 音速を自由に設定できるようにする
         double sound_speed = 1;
         arma::mat points;
         ShapeFunction N;

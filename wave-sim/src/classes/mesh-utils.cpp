@@ -230,7 +230,7 @@ MeshUtils::points_cells MeshUtils::read_vtm_file(std::string vtm_filename){
 
 }
 
-MeshUtils::points_cells MeshUtils::read_mesh(std::string vtk_filename){
+MeshUtils::points_cells MeshUtils::read_vtk_file(std::string vtk_filename){
 
     MeshUtils::points_cells points_cells;
     points_cells.points = {};
@@ -403,4 +403,118 @@ for(auto time : times){
 }
 make_paraview_data_file(output_dir,times,output_filenames);
 
+}
+
+
+void MeshUtils::describe_vtk_file(std::string vtk_filename){
+
+    auto reader = vtkSmartPointer<vtkUnstructuredGridReader>::New();
+    reader->SetFileName(vtk_filename.c_str());
+    std::cout<<"loading vtk file"<<std::endl;
+    reader->Update();
+
+    vtkUnstructuredGrid* mesh = reader->GetOutput();
+
+    // メッシュの基本情報を表示
+    std::cout << "Successfully loaded: " << vtk_filename << std::endl;
+    std::cout << "Number of points: " << mesh->GetNumberOfPoints() << std::endl;
+    std::cout << "Number of cells: " << mesh->GetNumberOfCells() << std::endl;
+}
+
+void MeshUtils::describe_vtm_file(std::string vtm_filename){
+
+    // VTMファイルのリーダー
+    auto reader = vtkSmartPointer<vtkXMLMultiBlockDataReader>::New();
+    reader->SetFileName(vtm_filename.c_str());
+    reader->Update();
+
+
+    std::cout<<"-------------------"<<std::endl;
+
+
+    // マルチブロックデータセットを取得
+    //auto multiBlockDataSet = reader->GetOutput();
+
+    auto multiBlockDataSet = vtkMultiBlockDataSet::SafeDownCast(reader->GetOutput());
+
+    if (!multiBlockDataSet) {
+        std::cerr << "Error: Unable to read the VTM file." << std::endl;
+    }else{
+        std::cout << "Successfully loaded :"<<vtm_filename<<std::endl;
+    }
+
+    std::cout << "Number of blocks: " << multiBlockDataSet->GetNumberOfBlocks() << std::endl;
+
+    // 各ブロックを処理
+    for (unsigned int i = 0; i < multiBlockDataSet->GetNumberOfBlocks(); ++i) {
+        auto block = multiBlockDataSet->GetBlock(i);
+        if (block) {
+            std::cout << "Block " << i << ": " << block->GetClassName() << std::endl;
+
+            auto dataSet = vtkDataSet::SafeDownCast(block);
+            if (!dataSet) {
+                std::cerr << "Block is not a vtkDataSet." << std::endl;
+            }else{
+
+                vtkIdType numberOfPoints = dataSet->GetNumberOfPoints();
+                std::cout << "Number of points: " << numberOfPoints << std::endl;
+                vtkIdType numberOfCells = dataSet->GetNumberOfCells();
+                std::cout << "Number of cells: " << numberOfCells << std::endl;
+            }
+
+        }else{
+            std::cout << "Block " << i << " is empty." << std::endl;
+        }
+    }
+}
+
+void MeshUtils::describe_cgns_file(std::string cgns_filename){
+    std::cout<<"-------------------"<<std::endl;
+
+     // CGNSファイルのリーダー
+    auto reader = vtkSmartPointer<vtkCGNSReader>::New();
+    reader->SetFileName(cgns_filename.c_str());
+    reader->Update();
+
+    // マルチブロックデータセットを取得
+    auto multiBlockDataSet = reader->GetOutput();
+    if (!multiBlockDataSet) {
+        std::cerr << "Error: Unable to read the CGNS file." << std::endl;
+    }
+
+    std::cout << "Number of blocks: " << multiBlockDataSet->GetNumberOfBlocks() << std::endl;
+
+    for (unsigned int i = 0; i < multiBlockDataSet->GetNumberOfBlocks(); ++i) {
+        auto block = multiBlockDataSet->GetBlock(i);
+        if (!block) {
+            std::cout << "Block " << i << " is empty." << std::endl;
+            continue;
+        }
+
+        std::cout << "Block " << i << " class name: " << block->GetClassName() << std::endl;
+        
+        if (auto nestedMultiBlock = vtkMultiBlockDataSet::SafeDownCast(block)) {
+            std::cout<<"this is vtm dataset "<<std::endl;
+
+            for (unsigned int j = 0; j < nestedMultiBlock->GetNumberOfBlocks(); ++j) {
+                auto nestedBlock = nestedMultiBlock->GetBlock(j);
+                if (!nestedBlock) {
+                    std::cout << "Nested block " << j << " is empty." << std::endl;
+                    continue;
+                }
+
+                auto vtk_dataset = vtkDataSet::SafeDownCast(nestedBlock);
+
+                // ネストされたブロックの型を出力
+                std::cout << "Nested block " << j << " class name: " << nestedBlock->GetClassName() << std::endl;
+
+                //pointとCellの数を表示
+
+                std::cout << "Number of points: " << vtk_dataset->GetNumberOfPoints() << std::endl;
+                std::cout << "Number of cells: " << vtk_dataset->GetNumberOfCells() << std::endl;
+
+            }
+        }
+
+    }
 }

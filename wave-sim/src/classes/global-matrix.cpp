@@ -121,3 +121,7 @@ GlobalMatrix::GlobalMatrix(std::vector<Cell>& mesh_cells,std::vector<Point>& mes
         }
     }
 }
+
+
+// 一応何もしないデフォルトコンストラクターを用意した
+GlobalMatrix::GlobalMatrix(){}

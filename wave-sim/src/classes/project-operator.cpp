@@ -156,7 +156,29 @@ void ProjectOperator::SaveMatrixFile(arma::mat& matrix,std::string matrix_filena
     }
 }
 
+void ProjectOperator::SaveCxMatrixFile(arma::cx_mat& matrix,std::string matrix_filename,std::string description){
+
+    std::cout<<"Saving matrix "+description+" : "+matrix_filename+" ...";
+    if(matrix.save(matrix_filename,arma::arma_binary)){
+        project_json["files"][description] = matrix_filename;
+        std::cout<<"SUCCESS"<<std::endl;
+    }else{
+        std::cerr<<"Fail to save matrix as:" + matrix_filename<<std::endl;
+    }
+}
+
 void ProjectOperator::SaveVectorFile(arma::vec & vector,std::string vector_filename, std::string description){
+
+    std::cout<<"Saving vector "+description+" : "+vector_filename+" ...";
+    if(vector.save(vector_filename,arma::arma_binary)){
+        project_json["files"][description] = vector_filename;
+        std::cout<<"SUCCESS"<<std::endl;
+    }else{
+        std::cerr<<"Fail to save vector as:" + vector_filename<<std::endl;
+    }
+}
+
+void ProjectOperator::SaveCxVectorFile(arma::cx_vec & vector,std::string vector_filename, std::string description){
 
     std::cout<<"Saving vector "+description+" : "+vector_filename+" ...";
     if(vector.save(vector_filename,arma::arma_binary)){
@@ -199,9 +221,33 @@ arma::mat ProjectOperator::LoadMatrixFile(std::string matrix_filename){
     return matrix;
 }
 
+arma::cx_mat ProjectOperator::LoadCxMatrixFile(std::string matrix_filename){
+    
+    arma::cx_mat matrix;
+    std::cout<<"Loading matrix from:"+matrix_filename+" ...";
+    if(matrix.load(matrix_filename)){
+        std::cout<<"SUCCESS"<<std::endl;
+    }else{
+        std::cerr<<"Fail to load matrix"<<std::endl;    
+    }
+    return matrix;
+}
+
 arma::vec ProjectOperator::LoadVectorFile(std::string vector_filename){
     
     arma::vec vector;
+    std::cout<<"Loading vector from:"+vector_filename + " ...";
+    if(vector.load(vector_filename)){
+        std::cout<<"SUCCESS"<<std::endl;
+    }else{
+        std::cerr<<"Fail to load vector"<<std::endl;    
+    }
+    return vector;
+}
+
+arma::cx_vec ProjectOperator::LoadCxVectorFile(std::string vector_filename){
+    
+    arma::cx_vec vector;
     std::cout<<"Loading vector from:"+vector_filename + " ...";
     if(vector.load(vector_filename)){
         std::cout<<"SUCCESS"<<std::endl;
@@ -231,6 +277,26 @@ std::vector<int> ProjectOperator::LoadIntVectorFile(std::string vector_filename)
     return data;
 }
 
+MeshUtils::points_cells ProjectOperator::LoadPointsCells(std::string mesh_filename){
+    MeshUtils meshutils;
+    MeshUtils::points_cells points_cells;
+
+    project_json["mesh_filename"] = mesh_filename;
+
+    if(mesh_filename.ends_with(".vtk")){
+        std::cout<<"mesh file type  vtk"<<std::endl;
+        points_cells = meshutils.read_vtk_file(mesh_filename);
+    }else if(mesh_filename.ends_with(".vtm")){
+        std::cout<<"mesh file type  vtm"<<std::endl;
+        points_cells = meshutils.read_vtm_file(mesh_filename);
+    }else if(mesh_filename.ends_with(".cgns")){
+        std::cout<<"mesh file type  cgns"<<std::endl;
+        points_cells = meshutils.read_cgns_file(mesh_filename);
+    }
+
+    return points_cells;
+}
+
 void ProjectOperator::RunModeAnalysis(){
 
     //TODO ModeAnalysisの設定を読み込む処理を追加
@@ -246,9 +312,21 @@ void ProjectOperator::RunModeAnalysis(){
 
     Solver solver;
     //TODO ソルバーは単純に固有値、固有ベクトルを返すだけにして、具体的なレンダリング処理は別のクラスメンバーで処理する。
-    Solver::ModeAnalysisResult mode_analysis_result= solver.mode_analysis(global_matrix.global_matrix,100);
+    //Solver::ModeAnalysisResult mode_analysis_result= solver.mode_analysis(global_matrix.global_matrix,100);
+    Solver::SortedEigs sorted_eigs = solver.compute_eigs(global_matrix.global_matrix);
+    std::string sorted_eign_vec_filename = project_json["project_name"].get<std::string>() + "_sorted_eign_vec.bin";
+    std::string sorted_eign_val_filename = project_json["project_name"].get<std::string>() + "_sorted_eign_val.bin";
+    SaveCxVectorFile(sorted_eigs.eign_values,sorted_eign_val_filename,"sorted_eign_values");
+    SaveCxMatrixFile(sorted_eigs.eign_vectors,sorted_eign_vec_filename,"sorted_eign_vectors");
 
     UpdateProjectFile();
+}
+
+void ProjectOperator::OutputTimeSeriesVTK(MeshUtils::points_cells points_cells, ,str::string output_dir){
+
+    MeshUtils::points_cells points_cells = LoadPointsCells(project_json["mesh_file"])
+
+    mesh_utils.write_mesh(points_cells.points,points_cells.cells,mode_analysis_result.modes[i].point_values,mode_analysis_result.modes[i].times,output_dir);
 }
 
 void ProjectOperator::Describe(std::string mesh_filename){

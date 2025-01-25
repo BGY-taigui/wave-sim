@@ -28,11 +28,21 @@ class ProjectOperator{
         void ReadMeshFile(std::string mesh_filename);
         
         void SaveMatrixFile(arma::mat& matrix,std::string matrix_filename,std::string description);
+        void SaveCxMatrixFile(arma::cx_mat& matrix,std::string matrix_filename,std::string description);
         void SaveVectorFile(arma::vec& vector,std::string vector_filename,std::string description);
+        void SaveCxVectorFile(arma::cx_vec& vector,std::string vector_filename,std::string description);
         void SaveIntVectorFile(std::vector<int>,std::string vector_filename,std::string description);
+
+        MeshUtils::points_cells LoadPointsCells(std::string mesh_filename);
+
         arma::mat LoadMatrixFile(std::string matrix_filename);
+        arma::cx_mat LoadCxMatrixFile(std::string matrix_filename);
         arma::vec LoadVectorFile(std::string vector_filename);
+        arma::cx_vec LoadCxVectorFile(std::string vector_filename);
         std::vector<int> LoadIntVectorFile(std::string vectro_filename);
+
+        void OutputTimeSeriesVTK();
+
         void ReadBoundaryCondition();
         void RunModeAnalysis();
         void RunUnsteadryAnalysis();

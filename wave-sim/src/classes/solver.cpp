@@ -73,6 +73,43 @@ void Solver::mode_analysis_frequency(sp_mat global_wave_matrix,sp_mat gloabl_nod
 
 }
 
+Solver::SortedEigs Solver::compute_eigs(mat global_matrix){
+    SortedEigs eigs;
+
+    arma::cx_vec eign_val;
+    arma::cx_mat eign_vec;
+
+    std::cout<<"computing eign value and vector"<<std::endl;
+    arma::eig_gen(eign_val,eign_vec,-global_matrix);
+
+    arma::cx_vec angular_velocity(eign_val.size());
+    arma::vec freqency(eign_val.size());
+
+    for(int i=0;i<eign_val.size();i++){
+        freqency[i] = pow(eign_val[i],0.5).real()/(2 * M_PI);
+   
+        if(freqency[i]<0){
+            std::cout<<"negative freqency"<<std::endl;
+        }   
+    }
+
+    std::cout<<"sorting modes"<<std::endl;
+    arma::uvec sorted_index = arma::sort_index(freqency);
+
+    arma::cx_vec sorted_eign_val(eign_val.size());
+    arma::cx_mat sorted_eign_vec(eign_vec.n_rows,eign_vec.n_cols);
+
+    for(int i=0;i<eign_val.size();i++){
+        sorted_eign_val(i) = eign_val(sorted_index(i));
+        sorted_eign_vec.col(i) = eign_vec.col(sorted_index(i));
+    }
+
+    eigs.eign_values = sorted_eign_val;
+    eigs.eign_vectors = sorted_eign_vec;
+
+    return eigs;
+}
+
 
 
 Solver::ModeAnalysisResult Solver::mode_analysis(mat global_matrix, int display_mode_num){

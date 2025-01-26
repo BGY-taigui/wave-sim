@@ -1,6 +1,3 @@
-#include <global-matrix.h>
-
-
 #include <project-operator.h>
 
 void ProjectOperator::NewProject(std::string project_name){
@@ -297,37 +294,6 @@ MeshUtils::points_cells ProjectOperator::LoadPointsCells(std::string mesh_filena
     return points_cells;
 }
 
-void ProjectOperator::RunModeAnalysis(){
-
-    //TODO ModeAnalysisの設定を読み込む処理を追加
-
-    if(global_matrix.global_matrix.n_cols==0){
-        global_matrix.get_single_global_matrix(true);
-
-        std::string global_matrix_filename = project_json["project_name"].get<std::string>() + "_global_matrix.bin";
-        SaveMatrixFile(global_matrix.global_matrix,global_matrix_filename,"global_matrix_file");
-
-        UpdateProjectFile();
-    }  
-
-    Solver solver;
-    //TODO ソルバーは単純に固有値、固有ベクトルを返すだけにして、具体的なレンダリング処理は別のクラスメンバーで処理する。
-    //Solver::ModeAnalysisResult mode_analysis_result= solver.mode_analysis(global_matrix.global_matrix,100);
-    Solver::SortedEigs sorted_eigs = solver.compute_eigs(global_matrix.global_matrix);
-    std::string sorted_eign_vec_filename = project_json["project_name"].get<std::string>() + "_sorted_eign_vec.bin";
-    std::string sorted_eign_val_filename = project_json["project_name"].get<std::string>() + "_sorted_eign_val.bin";
-    SaveCxVectorFile(sorted_eigs.eign_values,sorted_eign_val_filename,"sorted_eign_values");
-    SaveCxMatrixFile(sorted_eigs.eign_vectors,sorted_eign_vec_filename,"sorted_eign_vectors");
-
-    UpdateProjectFile();
-}
-
-void ProjectOperator::OutputTimeSeriesVTK(MeshUtils::points_cells points_cells, ,str::string output_dir){
-
-    MeshUtils::points_cells points_cells = LoadPointsCells(project_json["mesh_file"])
-
-    mesh_utils.write_mesh(points_cells.points,points_cells.cells,mode_analysis_result.modes[i].point_values,mode_analysis_result.modes[i].times,output_dir);
-}
 
 void ProjectOperator::Describe(std::string mesh_filename){
     MeshUtils mesh_utils;
@@ -370,6 +336,45 @@ void ProjectOperator::CleanAll(){
 
     UpdateProjectFile();
 
+}
+
+void ProjectOperator::CopyProject(std::string origin_projectnamerofile){
+
+    std::cout<<"LOADING ORIGIN PROJECT"<<std::endl;
+    ProjectOperator origin_project(origin_projectnamerofile);
+
+    vtknlohmann::json origin_project_json = origin_project.GetProject();
+
+    project_json["properties"] = origin_project_json["properties"];
+
+    std::string origin_project_name = origin_project_json["project_name"];
+    std::string project_name = project_json["project_name"];
+
+    for(auto [key,filename] : origin_project_json["files"].items()){
+        std::string filename_str = filename;
+        size_t pos = filename_str.find(origin_project_json["project_name"]);
+        std::string origin_filename = filename_str;
+        std::string new_filename = filename_str.replace(
+            pos,
+            origin_project_name.length(),
+            project_name
+        );
+
+        std::cout<<"Copying File :"+origin_filename+" to "+new_filename;
+        if(std::filesystem::copy_file(
+            origin_filename, new_filename, 
+            std::filesystem::copy_options::overwrite_existing)
+        ){
+            project_json["files"][key]= new_filename;
+            std::cout<<"SUCCESS"<<std::endl;
+
+        }else{
+            std::cerr<<"Unable to copy file"<<std::endl;
+        }
+
+    }
+
+    UpdateProjectFile();
 }
 
 void ProjectOperator::ShowHelp(){

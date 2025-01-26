@@ -50,6 +50,7 @@ class ProjectOperator{
 
         void Describe(std::string mesh_filename);
         void CleanAll();
+        void CopyProject(std::string origin_projectnameorfile);
 
         void ShowHelp();
 

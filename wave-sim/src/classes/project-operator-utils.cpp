@@ -120,6 +120,7 @@ void ProjectOperator::ReadMeshFile(std::string mesh_filename){
 
     std::cout<<"Creating Global Matrix..."<<std::endl;
 
+    //TODO ID番号を出力するところを、一行消してから出力する仕様に変える(見にくい)
     GlobalMatrix global_matrix = GlobalMatrix(points_cells.cells,points_cells.points);
 
 

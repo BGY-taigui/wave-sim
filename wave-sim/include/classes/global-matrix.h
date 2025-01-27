@@ -21,7 +21,7 @@ class GlobalMatrix{
     // index:point_id value:row
     std::vector<int> corresponding_point_id_indexes;
     arma::mat global_wave_matrix;
-    arma::sp_mat global_nodal_matrix;
+    arma::mat global_nodal_matrix;
     arma::mat global_matrix;
 
     void boundary_condittion_zero_point(std::vector<int> zero_value_point_ids);

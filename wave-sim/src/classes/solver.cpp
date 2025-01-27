@@ -80,6 +80,7 @@ Solver::SortedEigs Solver::compute_eigs(mat global_matrix){
     arma::cx_mat eign_vec;
 
     std::cout<<"computing eign value and vector"<<std::endl;
+    //TODO これ-global_matrixになってるのをなおす
     arma::eig_gen(eign_val,eign_vec,-global_matrix);
 
     arma::cx_vec angular_velocity(eign_val.size());
@@ -94,6 +95,7 @@ Solver::SortedEigs Solver::compute_eigs(mat global_matrix){
     }
 
     std::cout<<"sorting modes"<<std::endl;
+    //TODO なんか固有値が小さすぎる
     arma::uvec sorted_index = arma::sort_index(freqency);
 
     arma::cx_vec sorted_eign_val(eign_val.size());
@@ -110,6 +112,151 @@ Solver::SortedEigs Solver::compute_eigs(mat global_matrix){
     return eigs;
 }
 
+
+
+std::vector<Solver::EachModeResult> Solver::output_time_series_freq_range(const arma::cx_vec& eign_val,const arma::cx_mat& eign_vec,double start_mode_freq,double end_mode_freq,int display_timestep_num){
+
+    std::vector<EachModeResult> result;
+
+    arma::cx_vec angular_velocity(eign_val.size());
+    arma::vec freqency(eign_val.size());
+
+    for(int i=0;i<eign_val.size();i++){
+        angular_velocity(i) = pow(eign_val(i),0.5);
+        //TODO freqの計算が何か間違ってる
+        freqency(i) = pow(eign_val(i),0.5).real()/(2 * M_PI);
+
+        if(freqency(i)<0){
+            std::cout<<"negative freqency"<<std::endl;
+        }   
+    }
+
+    int mode_index = 0;
+    int hit_mode_counter = 0;
+    for(int mode_index = 0;mode_index<eign_val.size();mode_index++){
+
+        if(!(
+            (eign_val(mode_index).imag() != 0 | eign_val(mode_index).real() <= 0 |
+                !(
+                    start_mode_freq<freqency(mode_index) &
+                    end_mode_freq > freqency(mode_index)
+                )
+            )&(mode_index < eign_val.size())
+            )){
+            hit_mode_counter++;
+        }
+
+    }
+    std::cout<<"freqrange :"<<start_mode_freq<<"-"<<end_mode_freq<<std::endl;
+    std::cout<<hit_mode_counter<<" Modes HIT!"<<std::endl;
+
+    mode_index = 0;
+    for(int mode_index = 0;mode_index<eign_val.size();mode_index++){
+
+        if(!(
+            (eign_val(mode_index).imag() != 0 | eign_val(mode_index).real() <= 0 |
+                !(
+                    start_mode_freq<freqency(mode_index) &
+                    end_mode_freq > freqency(mode_index)
+                )
+            )&(mode_index < eign_val.size())
+            )){
+
+            std::cout<<"mode:"<<mode_index+1<<"freq:"<<freqency(mode_index)<<"eig val"<<eign_val(mode_index)<<std::endl;
+
+            EachModeResult each_mode_result;
+            each_mode_result.times = std::vector<double>(display_timestep_num);
+            each_mode_result.point_values = std::vector<arma::vec>(display_timestep_num);
+
+            double time_span = 1/freqency(mode_index);
+            double time_step = time_span/display_timestep_num;
+
+            for(int j=0;j<display_timestep_num;j++){
+                each_mode_result.times[j]= time_step * j;
+            }
+
+            for(int j=0; j<display_timestep_num;j++){
+
+                cx_vec result_complex = 
+                    eign_vec.col(mode_index) * exp(std::complex<double>(0,1)*
+                    angular_velocity(mode_index)*each_mode_result.times[j]);
+
+                vec result_real(result_complex.size());
+
+                for (int k=0;k<result_real.size();k++){
+                    result_real(k) = result_complex(k).real();
+                }
+
+                each_mode_result.point_values[j] = result_real;
+            }
+
+            result.push_back(each_mode_result);
+        }
+
+    }
+
+    return result;
+}
+
+
+std::vector<Solver::EachModeResult> Solver::output_time_series_mode_num(const arma::cx_vec& eign_val,const arma::cx_mat& eign_vec,int start_mode_num,int end_mode_num,int display_timestep_num){
+
+    std::vector<EachModeResult> result;
+
+    arma::cx_vec angular_velocity(eign_val.size());
+    arma::vec freqency(eign_val.size());
+
+    for(int i=0;i<eign_val.size();i++){
+        angular_velocity(i) = pow(eign_val(i),0.5);
+        freqency(i) = pow(eign_val(i),0.5).real()/(2 * M_PI);
+
+        if(freqency(i)<0){
+            std::cout<<"negative freqency"<<std::endl;
+        }   
+    }
+
+
+    //int mode_index = 0;
+    for(int mode_index = start_mode_num;mode_index<end_mode_num;mode_index++){
+
+        //mode_index++;
+        //while(eign_val(mode_index).imag() != 0 | eign_val(mode_index).real() <= 0){
+            //mode_index++;
+        //}
+        std::cout<<"mode:"<<mode_index+1<<"freq:"<<freqency(mode_index)<<"eig val"<<eign_val(mode_index)<<std::endl;
+
+        EachModeResult each_mode_result;
+        each_mode_result.times = std::vector<double>(display_timestep_num);
+        each_mode_result.point_values = std::vector<arma::vec>(display_timestep_num);
+
+        double time_span = 1/freqency(mode_index);
+        double time_step = time_span/display_timestep_num;
+
+        for(int j=0;j<display_timestep_num;j++){
+            each_mode_result.times[j]= time_step * j;
+        }
+
+        for(int j=0; j<display_timestep_num;j++){
+
+            cx_vec result_complex = 
+                eign_vec.col(mode_index) * exp(std::complex<double>(0,1)*
+                angular_velocity(mode_index)*each_mode_result.times[j]);
+
+            vec result_real(result_complex.size());
+
+            for (int k=0;k<result_real.size();k++){
+                result_real(k) = result_complex(k).real();
+            }
+
+            each_mode_result.point_values[j] = result_real;
+        }
+
+        result.push_back(each_mode_result);
+    }
+
+    return result;
+
+}
 
 
 Solver::ModeAnalysisResult Solver::mode_analysis(mat global_matrix, int display_mode_num){
@@ -141,8 +288,12 @@ Solver::ModeAnalysisResult Solver::mode_analysis(mat global_matrix, int display_
         }   
     }
 
+    //std::cout<<"eigs"<<std::endl;
+    //std::cout<<eign_val<<std::endl;
     std::cout<<"sorting modes"<<std::endl;
     arma::uvec sorted_index = arma::sort_index(freqency);
+    //std::cout<<"sorted"<<std::endl;
+    //std::cout<<sorted_index<<std::endl;
 
     result.freqency = freqency;
 
@@ -153,6 +304,8 @@ Solver::ModeAnalysisResult Solver::mode_analysis(mat global_matrix, int display_
 
     int mode_num =0;
 
+    std::cout<<"output modes"<<std::endl;
+
     // 振動数が少ない順にソートされたモードを指定された数だけ出力する
     for(int i =0; i<display_mode_num;i++){
 
@@ -160,6 +313,7 @@ Solver::ModeAnalysisResult Solver::mode_analysis(mat global_matrix, int display_
         mode_num++;
         while(eign_val(sorted_index[mode_num]).imag() != 0 | eign_val(sorted_index[mode_num]).real() <= 0){
             mode_num++;
+            std::cout<<"skipping :"<<mode_num<<std::endl;
         }
 
         std::vector<vec> each_mode_point_values(display_time_step_number);

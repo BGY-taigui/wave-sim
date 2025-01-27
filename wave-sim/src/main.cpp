@@ -150,6 +150,32 @@ int main(int argc , char* argv[]){
         }
         ProjectOperator project_operator(projectnameorfilename);
         project_operator.OutputTimeSeriesVTK();
+    }else if(subcommand == "show-modes"){
+        while ((opt = getopt(argc - 1, argv + 1, "p:")) != -1) {
+            switch (opt) {
+                case 'p':
+                    projectnameorfilename = optarg;
+                    break;
+                default:
+                    std::cerr << "Usage: wave-eq read-mesh -f <filename> -p <project>" << std::endl;
+                    return 1;
+            }
+        }
+        ProjectOperator project_operator(projectnameorfilename);
+        project_operator.ShowRelevantModes();
+    }else if(subcommand == "set-bc"){
+        while ((opt = getopt(argc - 1, argv + 1, "p:")) != -1) {
+            switch (opt) {
+                case 'p':
+                    projectnameorfilename = optarg;
+                    break;
+                default:
+                    std::cerr << "Usage: wave-eq read-mesh -f <filename> -p <project>" << std::endl;
+                    return 1;
+            }
+        }
+        ProjectOperator project_operator(projectnameorfilename);
+        project_operator.ReadBoundaryCondition();
     }else if(subcommand == "copy-project"){
         std::string origin_projectnamerofilename;
         while ((opt = getopt(argc - 1, argv + 1, "o:p:")) != -1) {

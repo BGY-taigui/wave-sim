@@ -27,6 +27,7 @@ class ProjectOperator{
 
         void ReadMeshFile(std::string mesh_filename);
         
+        //TODO constつける
         void SaveMatrixFile(arma::mat& matrix,std::string matrix_filename,std::string description);
         void SaveCxMatrixFile(arma::cx_mat& matrix,std::string matrix_filename,std::string description);
         void SaveVectorFile(arma::vec& vector,std::string vector_filename,std::string description);
@@ -42,6 +43,7 @@ class ProjectOperator{
         std::vector<int> LoadIntVectorFile(std::string vectro_filename);
 
         void OutputTimeSeriesVTK();
+        void ShowRelevantModes();
 
         void ReadBoundaryCondition();
         void RunModeAnalysis();

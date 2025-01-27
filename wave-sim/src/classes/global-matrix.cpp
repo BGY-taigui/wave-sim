@@ -20,6 +20,8 @@ void GlobalMatrix::define_condittion_zero_point(arma::vec center_vec, double rad
             zero_value_point_ids.push_back(corresponding_point_ids[i]);
         }
     }
+    
+    std::cout<<zero_value_point_ids.size()<<" points hit"<<std::endl;
 
     boundary_condittion_zero_point(zero_value_point_ids);
 }
@@ -40,8 +42,8 @@ mat GlobalMatrix::get_single_global_matrix(bool use_superlu){
     std::cout<<"cerating global single matrix ..."<<std::endl;
     //疎行列を使ってメモリ使用を効率化するなら、lapackじゃなくてsuperLUを使うように変更
 
-    global_matrix = arma::spsolve(global_nodal_matrix,global_wave_matrix,"lapack");
-    std::cout<<"end gathering"<<std::endl;
+    //global_matrix = arma::spsolve(global_nodal_matrix,global_wave_matrix,"lapack");
+    global_matrix = arma::solve(global_nodal_matrix,global_wave_matrix);
 
     /*
     if (use_superlu){
@@ -71,8 +73,8 @@ void GlobalMatrix::get_corresponding_point_id_indexes(){
 
 GlobalMatrix::GlobalMatrix(std::vector<Cell>& mesh_cells,std::vector<Point>& mesh_points)
 {
-    global_wave_matrix = sp_mat(mesh_points.size(),mesh_points.size());
-    global_nodal_matrix = sp_mat(mesh_points.size(),mesh_points.size());
+    global_wave_matrix = mat(mesh_points.size(),mesh_points.size());
+    global_nodal_matrix = mat(mesh_points.size(),mesh_points.size());
 
     corresponding_point_ids = std::vector<int>(mesh_points.size());
     for(int i=0;i<mesh_points.size();i++) {
@@ -84,7 +86,7 @@ GlobalMatrix::GlobalMatrix(std::vector<Cell>& mesh_cells,std::vector<Point>& mes
     for(auto& cell : mesh_cells){
         //全体行列を一旦8行、列分0で拡大する
 
-        std::cout<<"mapping cell ID:"<<cell.id<<std::endl;
+        std::cout<<"\rmapping cell ID:"<<cell.id<<std::flush;
 
         mat points(8,3);
         //TODO ここら辺に、要素の数がズレていた時のエラー処理を実装する
@@ -120,6 +122,8 @@ GlobalMatrix::GlobalMatrix(std::vector<Cell>& mesh_cells,std::vector<Point>& mes
             }
         }
     }
+
+    std::cout<<std::endl;
 }
 
 
